@@ -652,10 +652,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1975543245}
-  - component: {fileID: 1975543244}
   - component: {fileID: 1975543243}
+  - component: {fileID: 1975543246}
   m_Layer: 0
-  m_Name: GridManager
+  m_Name: Managers
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -673,14 +673,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a120048aa5604e23a0bb3cd4324158f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectBlast.Grid.GridManager
-  PassiveRows: 2
+  PassiveRows: 4
   PassiveColumns: 3
-  PassiveGridCenter: {x: 0, y: 0, z: -3.95}
+  PassiveGridCenter: {x: 0, y: 0, z: -7.41}
   ActiveRows: 1
   ActiveColumns: 3
   ActiveGridCenter: {x: 0, y: 0, z: 0}
   FiringRows: 1
-  FiringColumns: 3
+  FiringColumns: 4
   FiringGridCenter: {x: 0, y: 0, z: 2.41}
   CellSize: 2.06
   CellSpacing: 1
@@ -690,25 +690,6 @@ MonoBehaviour:
   ActiveColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   FiringColor: {r: 1, g: 0, b: 0, a: 1}
   OccupiedColor: {r: 1, g: 0.5, b: 0, a: 0.8}
---- !u!114 &1975543244
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1975543242}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1088e5c8c27324b15ba65c57f429c0a2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectBlast.Testing.GridManagerTester
-  TestHeroPrefab: {fileID: 1167761570092420, guid: 2513a92f10a3a1746bfe8e1034ae9f1a,
-    type: 3}
-  AutoRunTests: 0
-  PlaceHeroKey: 32
-  RemoveHeroKey: 114
-  ClearGridsKey: 99
-  LogStatusKey: 108
 --- !u!4 &1975543245
 Transform:
   m_ObjectHideFlags: 0
@@ -724,6 +705,27 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1975543246
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1975543242}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31fdf99d330204db2b8af6a8a7082a27, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectBlast.Heroes.HeroQueueManager
+  TestHeroPrefab: {fileID: 1167761570092420, guid: 2513a92f10a3a1746bfe8e1034ae9f1a,
+    type: 3}
+  AutoSpawnOnStart: 1
+  EnableLaneQueueSystem: 1
+  AnimationDuration: 0.3
+  AnimationDelay: 0.2
+  SelectedHero: {fileID: 1929514336291488299, guid: 2513a92f10a3a1746bfe8e1034ae9f1a,
+    type: 3}
+  ShowDebugLogs: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -731,6 +733,6 @@ SceneRoots:
   - {fileID: 1845332067}
   - {fileID: 1295315591}
   - {fileID: 387888289}
-  - {fileID: 1975543245}
   - {fileID: 1958421372}
   - {fileID: 1700173030}
+  - {fileID: 1975543245}

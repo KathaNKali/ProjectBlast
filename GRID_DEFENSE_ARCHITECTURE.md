@@ -31,24 +31,57 @@ This guide explains how to build your **queue-based tactical tower defense** gam
 ## 📐 Core System 1: Grid Manager
 
 ### **Purpose:** 
-Manages the 3-zone grid system where heroes are positioned.
+Manages the 3-zone grid system where heroes are positioned using a **vertical lane-based queue system**.
+
+### **Queue System Architecture:**
+**Vertical Lane System** - Each column is an independent queue:
+- Heroes only move within their lane (column)
+- Active Grid = 1 row × N columns (e.g., 1×3)
+- Passive Grid = 2+ rows × N columns (e.g., 2×3)
+- When Active hero deploys → Passive hero in same column moves up
+- All heroes in that lane shift up one row
+- Empty slots appear at bottom of lanes (spawn points)
+
+**Example Flow:**
+```
+Column 0   Column 1   Column 2
+[1]       [2]       [3]        ← Active (1 row)
+[4]       [5]       [6]        ← Passive Row 0
+[7]       [8]       [9]        ← Passive Row 1
+
+Player taps [2] → Deploys to Firing
+↓
+[1]       [5]       [3]        ← [5] moves to Active
+[4]       [8]       [6]        ← [8] moves up
+[7]       [ ]       [9]        ← Empty slot at bottom
+```
 
 ### **Key Responsibilities:**
 - Track all grid positions (Passive, Active, Firing)
 - Store which hero occupies each slot
-- Validate placement rules
+- Validate placement rules (strict lane enforcement)
+- Handle vertical lane shifting when heroes deploy
 - Notify systems when heroes move between zones
 
 ### **TopDown Engine Connection:**
 This extends concepts from `CharacterGridMovement` but adapts them for:
 - **Multi-zone system** (TDE assumes single grid)
+- **Vertical lane queues** (TDE has no queue concept)
 - **Static placement** (TDE assumes grid movement)
 - **Slot ownership tracking** (TDE doesn't track this)
+- **Strict lane enforcement** (heroes can't cross lanes)
 
 You can reference TDE's grid positioning math in `CharacterGridMovement.cs`:
 - Cell size calculations
 - World position to grid coordinate conversion
 - Grid boundary validation
+
+### **Lane Rules:**
+1. **Strict Lanes:** Heroes can only move within their column (no cross-lane movement)
+2. **Active Refill:** When Active slot empties, Passive hero from same column moves up
+3. **Passive Compacting:** All heroes in lane shift up when hero above them leaves
+4. **Empty Lanes:** If entire lane is empty, it stays empty (no cross-lane filling)
+5. **Firing Deployment:** Firing grid has NO lanes - heroes fill left-to-right (first available)
 
 ### **Implementation Pattern:**
 

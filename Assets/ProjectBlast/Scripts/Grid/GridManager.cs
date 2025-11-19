@@ -355,6 +355,34 @@ namespace ProjectBlast.Grid
         }
         
         /// <summary>
+        /// Gets the leftmost empty slot in reading order (left-to-right, top-to-bottom)
+        /// Ideal for filling Firing grid in consistent visual order
+        /// </summary>
+        public GridSlot GetLeftmostEmptySlot(GridZone zone)
+        {
+            var grid = GetGridArray(zone);
+            if (grid == null) return null;
+            
+            int rows = grid.GetLength(0);
+            int cols = grid.GetLength(1);
+            
+            // Iterate in reading order: top row left-to-right, then next row, etc.
+            for (int row = 0; row < rows; row++)
+            {
+                for (int col = 0; col < cols; col++)
+                {
+                    GridSlot slot = grid[row, col];
+                    if (slot != null && slot.IsEmpty)
+                    {
+                        return slot; // Return first empty slot found
+                    }
+                }
+            }
+            
+            return null; // No empty slots
+        }
+        
+        /// <summary>
         /// Gets all slots in a zone
         /// </summary>
         public List<GridSlot> GetAllSlots(GridZone zone)
@@ -615,6 +643,87 @@ namespace ProjectBlast.Grid
                 }
                 #endif
             }
+        }
+        
+        #endregion
+        
+        #region Lane System Queries
+        
+        /// <summary>
+        /// Get all heroes in a specific lane (column) within a zone, ordered from top to bottom
+        /// </summary>
+        public List<Hero> GetLaneHeroes(GridZone zone, int column)
+        {
+            List<Hero> laneHeroes = new List<Hero>();
+            
+            if (column < 0 || column >= GetColumnCount(zone))
+            {
+                Debug.LogWarning($"[GridManager] Invalid column {column} for zone {zone}");
+                return laneHeroes;
+            }
+            
+            int rowCount = GetRowCount(zone);
+            
+            // Iterate from top to bottom (Row 0 = top/front)
+            for (int row = 0; row < rowCount; row++)
+            {
+                GridSlot slot = GetSlot(zone, row, column);
+                if (slot != null && slot.IsOccupied)
+                {
+                    laneHeroes.Add(slot.OccupyingHero);
+                }
+            }
+            
+            return laneHeroes;
+        }
+        
+        /// <summary>
+        /// Get all slots in a specific lane (column) within a zone, ordered from top to bottom
+        /// </summary>
+        public List<GridSlot> GetLaneSlots(GridZone zone, int column)
+        {
+            List<GridSlot> laneSlots = new List<GridSlot>();
+            
+            if (column < 0 || column >= GetColumnCount(zone))
+            {
+                Debug.LogWarning($"[GridManager] Invalid column {column} for zone {zone}");
+                return laneSlots;
+            }
+            
+            int rowCount = GetRowCount(zone);
+            
+            // Iterate from top to bottom (Row 0 = top/front)
+            for (int row = 0; row < rowCount; row++)
+            {
+                GridSlot slot = GetSlot(zone, row, column);
+                if (slot != null)
+                {
+                    laneSlots.Add(slot);
+                }
+            }
+            
+            return laneSlots;
+        }
+        
+        /// <summary>
+        /// Check if a specific lane (column) has any heroes
+        /// </summary>
+        public bool IsLaneEmpty(GridZone zone, int column)
+        {
+            return GetLaneHeroes(zone, column).Count == 0;
+        }
+        
+        /// <summary>
+        /// Get the column (lane index) of a hero's current slot
+        /// </summary>
+        public int GetHeroLane(Hero hero)
+        {
+            if (hero == null || hero.CurrentGridSlot == null)
+            {
+                return -1;
+            }
+            
+            return hero.CurrentGridSlot.Column;
         }
         
         #endregion

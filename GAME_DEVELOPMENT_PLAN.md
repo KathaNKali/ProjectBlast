@@ -23,14 +23,14 @@ This game is a fast-paced hybrid of RTS, puzzle strategy, and tower defense. You
 ```
 
 **Core Mechanics:**
-1. Multi-Layered Player Grid System 
-2. Hero Queue & Deployment
-3. Automatic Combat System
-4. Enemy Waves & Lane Pressure
-5. Hero Classes & Counters
-6. Tactical Deployment Decisions
-7. Resource & Queue Management
-8. Base Defense & Firing Grid Health
+1. **Vertical Lane Queue System** - 3 independent columns, heroes move within lanes only
+2. **Multi-Layered Grid System** - Passive (2 rows) → Active (1 row) → Firing (no lanes)
+3. **Hero Auto-Shift** - When Active hero deploys, Passive heroes in that lane shift up
+4. **Automatic Combat System** - Heroes auto-fire at enemies using TDE weapons
+5. **Enemy Waves & Lane Pressure** - Enemies approach from top, target base
+6. **Hero Classes & Counters** - Different weapon types, ranges, damage
+7. **Tactical Deployment Decisions** - Choose which lane/hero to deploy
+8. **Base Defense & Firing Grid Health** - Game over when base destroyed
 
 ---
 
@@ -66,12 +66,16 @@ Consider two paths:
 - [ ] Test basic scene flow
 
 ### Grid System Setup (Custom - Most Important!)
-- [ ] Create PassiveGrid zone (visual + data structure)
-- [ ] Create ActiveGrid zone
-- [ ] Create FiringGrid zone
-- [ ] Implement grid position data structure
-- [ ] Add visual grid indicators
-- [ ] Test grid zone detection
+- [✅] Create GridManager with 3 zones (Passive, Active, Firing)
+- [✅] Implement vertical lane-based queue system
+- [✅] Active Grid: 1 row × N columns (strict lanes)
+- [✅] Passive Grid: 2+ rows × N columns (vertical queues)
+- [✅] Firing Grid: No lanes (left-to-right fill)
+- [✅] Add visual gizmos for all grids (color-coded)
+- [✅] Test grid positioning and slot tracking
+- [ ] Implement hero auto-shift logic (lane-based)
+- [ ] Add animation system for hero movement (Lerp)
+- [ ] Test lane queue flow with multiple deployments
 
 ### Hero System (Adapted from Character)
 - [ ] Create Hero base class (may extend Character or custom)
