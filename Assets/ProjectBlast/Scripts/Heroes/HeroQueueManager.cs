@@ -261,9 +261,15 @@ namespace ProjectBlast.Heroes
                 Debug.Log($"[HeroQueueManager] Deployed {SelectedHero.HeroName} from Active Lane {deployedLane} ({oldSlot.Row}, {oldSlot.Column}) → Firing ({emptyFiringSlot.Row}, {emptyFiringSlot.Column})");
             }
             
+            // Store reference before clearing selection
+            Hero deployedHero = SelectedHero;
+            
             // Unhighlight and clear selection
             SelectedHero.Unhighlight();
             SelectedHero = null;
+            
+            // IMPORTANT: Start firing when hero enters Firing zone
+            deployedHero.StartFiring();
             
             // Trigger lane shift if enabled
             if (EnableLaneQueueSystem && deployedLane >= 0)
@@ -496,6 +502,105 @@ namespace ProjectBlast.Heroes
             public GridSlot ToSlot;
             public Vector3 StartPosition;
             public Vector3 EndPosition;
+        }
+        
+        #endregion
+        
+        #region Hero Lifecycle Management
+        
+        /// <summary>
+        /// Called when a hero is removed from the grid (death or ammo depletion)
+        /// </summary>
+        /// <param name="hero">The hero being removed</param>
+        /// <param name="reason">Reason for removal (death, ammo depletion, etc.)</param>
+        public void OnHeroRemoved(Hero hero, string reason)
+        {
+            if (ShowDebugLogs)
+            {
+                Debug.Log($"[HeroQueueManager] Hero {hero.HeroName} removed from battle (reason: {reason})");
+            }
+            
+            // Remove from tracked heroes list
+            if (_allHeroes.Contains(hero))
+            {
+                _allHeroes.Remove(hero);
+            }
+            
+            // If selected hero is removed, clear selection
+            if (SelectedHero == hero)
+            {
+                SelectedHero = null;
+            }
+            
+            // TODO: Update UI to show hero as lost
+            // TODO: Check if all heroes are lost (game over condition)
+            // TODO: Trigger hero lost event/feedback
+            
+            if (ShowDebugLogs)
+            {
+                Debug.Log($"[HeroQueueManager] Remaining heroes: {_allHeroes.Count}");
+            }
+        }
+        
+        /// <summary>
+        /// Check if all heroes are lost (death or ammo depletion)
+        /// </summary>
+        public bool AreAllHeroesLost()
+        {
+            if (_allHeroes.Count == 0)
+            {
+                return true;
+            }
+            
+            // Check if any hero is still functional
+            foreach (Hero hero in _allHeroes)
+            {
+                if (hero != null && hero.IsFunctional)
+                {
+                    return false;
+                }
+            }
+            
+            return true; // All heroes are dead or out of ammo
+        }
+        
+        /// <summary>
+        /// Quick helper to place a hero directly in Firing zone and start combat (for testing)
+        /// </summary>
+        public void PlaceHeroInFiringZone(Hero hero, int row = 0, int column = 0)
+        {
+            if (hero == null)
+            {
+                Debug.LogError("[HeroQueueManager] Cannot place null hero in Firing zone!");
+                return;
+            }
+            
+            if (GridManager.Instance == null)
+            {
+                Debug.LogError("[HeroQueueManager] GridManager not found!");
+                return;
+            }
+            
+            // Place hero in Firing zone
+            bool placed = GridManager.Instance.PlaceHero(hero, GridZone.Firing, row, column);
+            
+            if (!placed)
+            {
+                Debug.LogError($"[HeroQueueManager] Failed to place {hero.HeroName} in Firing zone at ({row}, {column})!");
+                return;
+            }
+            
+            // Move hero GameObject to position
+            Vector3 newPosition = GridManager.Instance.GridToWorldPosition(GridZone.Firing, row, column);
+            hero.transform.position = newPosition;
+            
+            // Start firing
+            hero.StartFiring();
+            
+            if (ShowDebugLogs)
+            {
+                Debug.Log($"[HeroQueueManager] Placed {hero.HeroName} in Firing zone at ({row}, {column}) and started firing.");
+            }
         }
         
         #endregion
