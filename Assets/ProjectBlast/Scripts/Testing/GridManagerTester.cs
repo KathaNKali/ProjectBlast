@@ -311,7 +311,8 @@ namespace ProjectBlast.Testing
             
             heroObj.name = heroName;
             var hero = heroObj.GetComponent<Hero>();
-            hero.HeroName = heroName;
+            // Note: HeroName now reads from HeroDataSO, not directly settable
+            // For testing, just use GameObject name
             
             return hero;
         }

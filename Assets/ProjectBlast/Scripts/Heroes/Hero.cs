@@ -1,5 +1,6 @@
 using UnityEngine;
 using ProjectBlast.Grid;
+using ProjectBlast.Data;
 using MoreMountains.TopDownEngine;
 using MoreMountains.Tools;
 
@@ -21,22 +22,24 @@ namespace ProjectBlast.Heroes
     /// 3. Deploy to Firing Grid (combat)
     /// 4. Auto-fire at enemies
     /// 5. Death or ammo depletion = permanent loss
+    /// 
+    /// SCRIPTABLEOBJECT INTEGRATION:
+    /// - Assign HeroData SO to load all stats
+    /// - Inspector values used as fallback if HeroData not assigned
+    /// - Call InitializeFromData() to apply SO stats
     /// </summary>
     [RequireComponent(typeof(Collider))]
     public class Hero : MonoBehaviour
     {
         #region Inspector Fields
         
+        [Header("Hero Configuration")]
+        [Tooltip("Hero data ScriptableObject (all stats loaded from here if assigned)")]
+        public HeroDataSO HeroData;
+        
         [Header("Grid Integration")]
         [Tooltip("Current slot this hero occupies (managed by GridManager)")]
         public GridSlot CurrentGridSlot;
-        
-        [Header("Hero Identity")]
-        [Tooltip("Display name for this hero")]
-        public string HeroName = "Hero";
-        
-        [Tooltip("Hero class/type (Ranged, Tank, Support, etc.)")]
-        public HeroClass HeroClass = HeroClass.Ranged;
         
         [Header("Visual Feedback")]
         [Tooltip("Material to apply when hero is selected/highlighted")]
@@ -56,24 +59,12 @@ namespace ProjectBlast.Heroes
         [Tooltip("Transform where weapon will be attached (child of this GameObject)")]
         public Transform WeaponAttachment;
         
-        [Tooltip("Weapon prefab to equip (ProjectileWeapon recommended)")]
-        public Weapon WeaponPrefab;
+        [Header("Read-Only Runtime Info")]
+        [Tooltip("Current ammo count (runtime)")]
+        [SerializeField] private int _displayCurrentAmmo;
         
-        [Tooltip("Layer mask for enemy detection (what this hero can target)")]
-        public LayerMask TargetLayerMask;
-        
-        [Header("Ammo System")]
-        [Tooltip("Does this hero have unlimited ammo?")]
-        public bool UnlimitedAmmo = false;
-        
-        [Tooltip("Starting ammo count (ignored if UnlimitedAmmo is true)")]
-        public int StartingAmmo = 100;
-        
-        [Tooltip("Ammo consumed per shot")]
-        public int AmmoPerShot = 1;
-        
-        [Tooltip("Warn when ammo reaches this threshold (for UI/feedback)")]
-        public int LowAmmoThreshold = 20;
+        [Tooltip("Is this hero currently firing? (runtime)")]
+        [SerializeField] private bool _displayIsFiring;
         
         [Header("Lifecycle Settings")]
         [Tooltip("Delay before removing hero from grid after death/depletion (seconds)")]
@@ -81,6 +72,60 @@ namespace ProjectBlast.Heroes
         
         [Tooltip("Should hero GameObject be destroyed after removal?")]
         public bool DestroyOnRemoval = true;
+        
+        #endregion
+        
+        #region Runtime Properties (Data-Driven)
+        
+        /// <summary>
+        /// Hero name - reads from HeroDataSO if available
+        /// </summary>
+        public string HeroName => HeroData != null ? HeroData.HeroName : gameObject.name;
+        
+        /// <summary>
+        /// Hero class - reads from HeroDataSO if available
+        /// </summary>
+        public HeroClass HeroClass => HeroData != null ? HeroData.HeroClass : HeroClass.Ranged;
+        
+        /// <summary>
+        /// Detection range - reads from HeroDataSO if available
+        /// </summary>
+        public float DetectionRange => HeroData != null ? HeroData.DetectionRange : 20f;
+        
+        /// <summary>
+        /// Target search interval - reads from HeroDataSO if available
+        /// </summary>
+        public float TargetSearchInterval => HeroData != null ? HeroData.TargetSearchInterval : 0.5f;
+        
+        /// <summary>
+        /// Fire rate - reads from HeroDataSO if available
+        /// </summary>
+        public float AutoFireRate => HeroData != null ? HeroData.FireRate : 2f;
+        
+        /// <summary>
+        /// Target layer mask - reads from HeroDataSO if available
+        /// </summary>
+        public LayerMask TargetLayerMask => HeroData != null ? HeroData.TargetLayerMask : 0;
+        
+        /// <summary>
+        /// Unlimited ammo - reads from HeroDataSO if available
+        /// </summary>
+        public bool UnlimitedAmmo => HeroData != null ? HeroData.UnlimitedAmmo : false;
+        
+        /// <summary>
+        /// Starting ammo - reads from HeroDataSO if available
+        /// </summary>
+        public int StartingAmmo => HeroData != null ? HeroData.StartingAmmo : 100;
+        
+        /// <summary>
+        /// Low ammo threshold - reads from HeroDataSO if available
+        /// </summary>
+        public int LowAmmoThreshold => HeroData != null ? HeroData.LowAmmoThreshold : 20;
+        
+        /// <summary>
+        /// Weapon prefab - reads from HeroDataSO if available
+        /// </summary>
+        public Weapon WeaponPrefab => HeroData != null ? HeroData.DefaultWeaponPrefab : null;
         
         #endregion
         
@@ -175,14 +220,38 @@ namespace ProjectBlast.Heroes
         }
         
         /// <summary>
+        /// Load all stats from HeroDataSO
+        /// </summary>
+        protected virtual void InitializeFromData()
+        {
+            if (HeroData == null)
+            {
+                Debug.LogWarning($"[Hero] InitializeFromData called but HeroData is null on {gameObject.name}");
+                return;
+            }
+            
+            // Apply all hero data (this will override inspector values)
+            HeroData.ApplyToHero(this);
+            
+            Debug.Log($"[Hero] Loaded stats from {HeroData.name}. DPS: {HeroData.DPS:F1}, Ammo Lifetime: {HeroData.AmmoLifetime:F1}s");
+        }
+        
+        /// <summary>
         /// Initialize hero components and setup
         /// </summary>
         protected virtual void InitializeHero()
         {
-            if (string.IsNullOrEmpty(HeroName))
+            // Validate HeroDataSO
+            if (HeroData == null)
             {
-                HeroName = gameObject.name;
+                Debug.LogError($"[Hero] {gameObject.name} has no HeroDataSO assigned! Hero will not function properly.");
+                return;
             }
+            
+            // Load stats from HeroDataSO
+            InitializeFromData();
+            
+            Debug.Log($"[Hero] {HeroName} initialized from {HeroData.name}");
             
             // Validate TDE components
             if (Character == null)
@@ -424,15 +493,34 @@ namespace ProjectBlast.Heroes
         }
         
         /// <summary>
+        /// Get ammo consumption rate from weapon (or fallback to 1)
+        /// </summary>
+        protected virtual int GetAmmoConsumptionRate()
+        {
+            // Try to get from weapon's WeaponDataHolder
+            if (_currentWeapon != null)
+            {
+                var weaponDataHolder = _currentWeapon.GetComponent<WeaponDataHolder>();
+                if (weaponDataHolder != null && weaponDataHolder.WeaponData != null)
+                {
+                    return weaponDataHolder.GetAmmoPerShot();
+                }
+            }
+            
+            // Fallback to 1 ammo per shot
+            return 1;
+        }
+        
+        /// <summary>
         /// Consume ammo (called when firing)
         /// </summary>
         /// <returns>True if ammo was consumed, false if out of ammo</returns>
         public virtual bool ConsumeAmmo(int amount = -1)
         {
-            // Use AmmoPerShot if amount not specified
+            // Use ammo consumption from weapon if available
             if (amount <= 0)
             {
-                amount = AmmoPerShot;
+                amount = GetAmmoConsumptionRate();
             }
             
             // Unlimited ammo always succeeds
@@ -537,16 +625,6 @@ namespace ProjectBlast.Heroes
         
         #region Auto-Targeting & Combat
         
-        [Header("Auto-Targeting Settings")]
-        [Tooltip("Maximum range to detect enemies")]
-        public float DetectionRange = 20f;
-        
-        [Tooltip("How often to search for new targets (seconds)")]
-        public float TargetSearchInterval = 0.5f;
-        
-        [Tooltip("Fire rate when auto-firing (shots per second)")]
-        public float AutoFireRate = 2f;
-        
         private Transform _currentTarget;
         private float _lastTargetSearchTime;
         private float _lastFireTime;
@@ -565,6 +643,10 @@ namespace ProjectBlast.Heroes
                 // Stop firing if we ran out of ammo mid-combat
                 StopFiring();
             }
+            
+            // Update display fields for Inspector visibility
+            _displayCurrentAmmo = _currentAmmo;
+            _displayIsFiring = _isFiring;
         }
         
         /// <summary>

@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7026200af2df7458ea9fb00e764b0d8f, type: 3}
+  m_Name: Weapon_00
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectBlast.Data.WeaponDataSO
+  WeaponName: New Weapon
+  WeaponType: 0
+  Icon: {fileID: 0}
+  Description: A reliable weapon.
+  DamagePerShot: 10
+  DamageType: 0
+  AmmoPerShot: 1
+  ProjectilePrefab: {fileID: 1565775507863266, guid: d75a59215c6fb44b8a9a09e1317dc853,
+    type: 3}
+  ProjectileSpeed: 1
+  ProjectileLifetime: 3
+  MaxRange: 25
+  WeaponModelPrefab: {fileID: 0}
+  MuzzleFlashPrefab: {fileID: 0}
+  FireSound: {fileID: 0}
