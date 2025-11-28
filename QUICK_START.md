@@ -1,6 +1,155 @@
-# 🚀 Quick Start Guide - Building Your First Level
+# 🚀 Quick Start Guide - ProjectBlast Setup
 
-This guide will help you create your first playable level in 30 minutes!
+This guide covers both **generic TopDown Engine setup** and **ProjectBlast-specific systems**.
+
+**Choose Your Path:**
+- 📘 **New to TDE?** Start with [Generic TDE Setup](#generic-tde-setup) below
+- 🎮 **ProjectBlast Specific?** Jump to [ProjectBlast Grid Defense Setup](#projectblast-grid-defense-setup)
+
+---
+
+## 🎯 ProjectBlast Grid Defense Setup
+
+### Quick Overview
+ProjectBlast uses a **3-zone grid system** with **vertical lane queues** where heroes automatically engage enemies using **TDE's AIBrain system**.
+
+**Key Systems:**
+- `GridManager` - 3-zone grid (Passive → Active → Firing)
+- `HeroQueueManager` - Lane-based hero movement
+- `Hero.cs` - AIBrain integration for auto-combat
+- `HeroDataSO` - ScriptableObject-based configuration
+
+### Step 1: Test Existing Grid System (5 minutes)
+
+```
+1. Open ProjectBlast in Unity 6000.2.10f1
+2. Open scene: Assets/ProjectBlast/Scenes/GridTest.unity
+3. Press Play
+4. Click heroes in Active grid (middle row)
+5. Watch them deploy to Firing grid (top rows)
+6. Observe automatic lane shifting
+```
+
+**✅ If heroes move smoothly, the core system works!**
+
+### Step 2: Create Your First Hero (15 minutes)
+
+#### A. Create HeroDataSO Asset
+```
+1. Project → Right-click → Create → ProjectBlast → Hero Data
+2. Name: "Hero_Ranger"
+3. Configure:
+   - Hero Name: "Ranger"
+   - Hero Class: Ranged
+   - Detection Range: 20
+   - Target Search Interval: 0.5
+   - Starting Ammo: 100
+   - Fire Rate: 2.0
+   - Target Layer Mask: Select "Enemy" layer
+   - Obstacle Layer Mask: Select "Obstacles" layer
+```
+
+#### B. Create Weapon Prefab (or use existing)
+```
+1. Use existing: Assets/TopDownEngine/Demos/Loft3D/Weapons/AssaultRifle3D
+2. Or create new weapon - see Documentation/HERO_AIBRAIN_INTEGRATION.md
+```
+
+#### C. Create Hero Prefab
+```
+1. Create Empty GameObject → Name: "Hero_Ranger"
+2. Add TDE Components:
+   - Character (CharacterTypes.Player, Dimension: Type3D)
+   - Health
+   - CharacterHandleWeapon
+   - CharacterOrientation3D
+   - TopDownController3D
+3. Add AI Components (create child GameObject "AIBrain"):
+   - AIBrain
+   - AIActionShoot3D
+   - AIActionAimWeaponAtTarget3D
+   - AIDecisionDetectTargetRadius3D
+   - AIDecisionLineOfSightToTarget3D
+4. Add ProjectBlast Component:
+   - Hero (assign HeroDataSO)
+5. Create child transform: "WeaponAttachment"
+6. Add visual model (Capsule or 3D model)
+```
+
+#### D. Configure AIBrain States in Inspector
+```
+1. Select Hero_Ranger
+2. Find AIBrain component
+3. Configure States:
+   
+   State 0: "Inactive"
+   - Actions: (empty)
+   - Transitions: (none)
+   
+   State 1: "Combat"
+   - Actions: Add AIActionShoot3D, AIActionAimWeaponAtTarget3D
+   - Transitions: (none - controlled by Hero.cs)
+   
+4. Set BrainActive = false (Hero.cs controls this)
+```
+
+**📖 Full Guide:** See `Documentation/HERO_AIBRAIN_INTEGRATION.md` for complete setup
+
+### Step 3: Test Hero Combat (10 minutes)
+
+#### A. Create Test Enemy
+```
+1. Create Cube → Name: "TestEnemy"
+2. Set Layer: "Enemy"
+3. Add Component: Health (Initial: 100)
+4. Position at (0, 0.5, 10) - in front of Firing grid
+```
+
+#### B. Test in Play Mode
+```
+1. Place Hero_Ranger in Firing grid slot
+2. Press Play
+3. Hero should:
+   ✅ Detect enemy (AIDecisionDetectTargetRadius3D)
+   ✅ Verify line-of-sight (AIDecisionLineOfSightToTarget3D)
+   ✅ Rotate toward target (CharacterOrientation3D)
+   ✅ Aim weapon (AIActionAimWeaponAtTarget3D)
+   ✅ Fire automatically (AIActionShoot3D)
+```
+
+**🐛 Troubleshooting:** See `HERO_FIRING_TEST.md` for detailed testing guide
+
+### Step 4: Understand Data Flow
+
+```
+┌─────────────────┐
+│   HeroDataSO    │  ← Single source of truth
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│   Hero.cs       │  ← Orchestration layer
+│  ConfigureAI()  │  ← Applies SO stats to AI
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│   AIBrain       │  ← TDE behavior layer
+│  AI Components  │  ← Auto-combat execution
+└─────────────────┘
+```
+
+**Key Files to Study:**
+- `Assets/ProjectBlast/Scripts/Heroes/Hero.cs` (686 lines)
+- `Assets/ProjectBlast/Scripts/Grid/GridManager.cs` (732 lines)
+- `Assets/ProjectBlast/Scripts/Heroes/HeroQueueManager.cs` (504 lines)
+
+**Documentation:**
+- `GRID_DEFENSE_ARCHITECTURE.md` - System architecture
+- `VERTICAL_LANE_QUEUE_SYSTEM.md` - Queue mechanics
+- `Documentation/SO_SYSTEM_SIMPLIFIED.md` - Data architecture
+
+---
+
+# Generic TDE Setup
 
 ---
 

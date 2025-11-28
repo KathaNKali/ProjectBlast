@@ -142,12 +142,38 @@ Upgrade Heroes → Unlock New Worlds → Repeat
 
 ---
 
-## 🔄 Phase 2: Combat & Enemy Systems (IN PROGRESS)
+## 🔄 Phase 2: Combat & Enemy Systems (MOSTLY COMPLETED)
 
-**Target Duration:** Week 3-4  
-**Status:** Next priority
+**Target Duration:** Week 3-4 (Nov 21-28, 2025)  
+**Status:** Hero combat complete, Enemy system next
 
-### Enemy System
+### Hero Combat System ✅
+- [✅] Integrate TDE Weapon system with Hero class
+- [✅] Add `CharacterHandleWeapon` ability to heroes
+- [✅] **AIBrain Integration** - Use TDE's AI system for automatic combat
+  - [✅] AIDecisionDetectTargetRadius3D for target scanning
+  - [✅] AIDecisionLineOfSightToTarget3D for LOS verification
+  - [✅] AIActionAimWeaponAtTarget3D for weapon aiming
+  - [✅] AIActionShoot3D for automatic firing
+- [✅] Add `CharacterOrientation3D` for body rotation toward targets
+- [✅] **Zone-Based Combat** - Heroes only fire when in Firing zone
+- [✅] **ConfigureAI() Method** - Apply HeroDataSO stats to AI components
+- [✅] Create hero weapon types:
+  - [✅] Ranged DPS (ProjectileWeapon with auto-targeting)
+  - [ ] Tank (low damage, high health) - Planned
+  - [ ] AOE (area damage) - Planned
+  - [ ] Support (buffs/heals) - Planned
+- [✅] **Ammo System** - Limited ammo with permanent loss condition
+- [✅] Implement hero removal when ammo depleted
+- [✅] Add combat feedback foundation (MMFeedbacks ready for polish)
+- [✅] Test hero auto-targeting and firing
+
+**Files Created:**
+- `Assets/ProjectBlast/Scripts/Heroes/Hero.cs` (686 lines) - AIBrain integration
+- `Assets/ProjectBlast/Prefabs/Hero_00.prefab` - With AI components configured
+- `Documentation/HERO_AIBRAIN_INTEGRATION.md` (500+ lines) - Complete AI setup guide
+
+### Enemy System (Next Priority)
 - [ ] Design enemy types (Fast, Tank, Flying, Armored)
 - [ ] Create Enemy base class (extends TDE Character)
 - [ ] Add AIBrain for pathfinding
@@ -157,27 +183,15 @@ Upgrade Heroes → Unlock New Worlds → Repeat
 - [ ] Add visual models for each enemy type
 - [ ] Test enemy spawning and movement
 
-### Hero Combat System
-- [ ] Integrate TDE Weapon system with Hero class
-- [ ] Add `CharacterHandleWeapon` ability to heroes
-- [ ] Implement `WeaponAutoAim3D` for auto-targeting
-- [ ] Create hero weapon types:
-  - [ ] Ranged DPS (ProjectileWeapon)
-  - [ ] Tank (low damage, high health)
-  - [ ] AOE (area damage)
-  - [ ] Support (buffs/heals)
-- [ ] Add ammo system (limited ammo = permanent loss condition)
-- [ ] Implement hero death handling
-- [ ] Add combat feedback (MMFeedbacks for shooting, hits, deaths)
-- [ ] Test hero vs enemy combat
-
-### Damage & Health
-- [ ] Add Health component to heroes
+### Damage & Health ✅ (Partial)
+- [✅] Add Health component to heroes
 - [ ] Add Health component to base
-- [ ] Create projectiles with DamageOnTouch
+- [✅] Create projectiles with DamageOnTouch
 - [ ] Implement hit reactions and effects
 - [ ] Add death animations
 - [ ] Test damage flow (hero → enemy, enemy → base, enemy → hero)
+
+**Key Achievement:** Successfully integrated TDE's AIBrain system for hero combat, replacing manual WeaponAutoAim approach with ~100 fewer lines of code while gaining Inspector configurability and extensibility.
 
 ---
 

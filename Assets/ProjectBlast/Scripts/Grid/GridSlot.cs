@@ -7,17 +7,21 @@ namespace ProjectBlast.Grid
     /// Represents a single slot in a grid zone.
     /// Tracks position, occupancy, and state information.
     /// </summary>
+    [System.Serializable]
     public class GridSlot
     {
         // ===== IDENTITY =====
         /// <summary>Which grid zone this slot belongs to</summary>
-        public GridZone Zone { get; private set; }
+        [SerializeField] private GridZone _zone;
+        public GridZone Zone { get => _zone; private set => _zone = value; }
         
         /// <summary>Row index (0 = front/closest to enemies, higher = back)</summary>
-        public int Row { get; private set; }
+        [SerializeField] private int _row;
+        public int Row { get => _row; private set => _row = value; }
         
         /// <summary>Column index (0 = left, higher = right)</summary>
-        public int Column { get; private set; }
+        [SerializeField] private int _column;
+        public int Column { get => _column; private set => _column = value; }
         
         // ===== SPATIAL =====
         /// <summary>World space position of this slot's center</summary>

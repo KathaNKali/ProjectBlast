@@ -123,31 +123,52 @@ Step 4: Create Hero Prefab
 ```
 
 ```
-RUNTIME FLOW
-════════════
+RUNTIME FLOW (Current - AIBrain Integration)
+════════════════════════════════════════════
 
+Hero.Awake()
+  ↓
+Find all components:
+  • Character, Health, CharacterHandleWeapon
+  • CharacterOrientation3D, TopDownController3D
+  • AIBrain, AIActionShoot3D, AIActionAim
+  • AIDecisionDetectTargetRadius3D, AIDecisionLOS
+  ↓
 Hero.Start()
   ↓
-Hero.InitializeFromData()
+Hero.ConfigureAI()
   ↓
-HeroDataSO.ApplyToHero()
-  • Validates weapon setup
-  • Sets health from SO
-  ↓
-Hero reads all stats via properties:
-  • Hero.FireRate → HeroData.FireRate
-  • Hero.DetectionRange → HeroData.DetectionRange
-  • Hero.WeaponPrefab → HeroData.DefaultWeaponPrefab
+Apply HeroDataSO stats to AI components:
+  • AIDecisionDetect.Radius = HeroData.DetectionRange
+  • AIDecisionDetect.TargetLayerMask = HeroData.TargetLayerMask
+  • AIDecisionLOS.ObstacleLayerMask = HeroData.ObstacleLayerMask
+  • AIActionShoot.TargetHandleWeaponAbility = HandleWeapon
   ↓
 Hero.EquipWeapon(HeroData.DefaultWeaponPrefab)
   • Instantiates weapon
-  • Weapon has WeaponDataHolder
-  • WeaponDataHolder references WeaponDataSO
+  • Weapon attaches to WeaponAttachment transform
+  • CharacterHandleWeapon manages weapon
+  ↓
+[Hero deployed to Firing zone]
   ↓
 Hero.StartFiring()
   ↓
-Hero.TryFireWeapon()
-  • Reads: Hero.FireRate (from HeroDataSO)
+AIBrain.BrainActive = true
+AIBrain.TransitionToState("Combat")
+  ↓
+AIBrain executes Combat state:
+  • AIDecisionDetectTargetRadius3D scans for enemies
+  • AIDecisionLineOfSightToTarget3D verifies LOS
+  • AIActionAimWeaponAtTarget3D aims weapon
+  • CharacterOrientation3D rotates body
+  • AIActionShoot3D fires weapon
+  ↓
+Projectile spawned → Deals damage via DamageOnTouch
+  ↓
+Ammo consumed → Hero monitors weapon ammo
+  ↓
+If ammo depleted → Hero.OnAmmoDepeted() → Remove from grid
+```
   • Consumes: GetAmmoConsumptionRate()
     → WeaponDataHolder.GetAmmoPerShot()
     → From WeaponDataSO.AmmoPerShot

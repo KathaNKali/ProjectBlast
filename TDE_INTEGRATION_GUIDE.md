@@ -201,15 +201,117 @@ public class HeroSpawner : MonoBehaviour
 
 ---
 
-### **6. AI System** (Use for Enemy Pathing)
+### **6. AI System** (✅ HEAVILY USED - For Heroes & Enemies)
 
 **What TDE Provides:**
-- `AIBrain` - Controls AI decision making
-- `AIActionMoveTowardsTarget3D` - Move towards player base
-- `AIActionShoot3D` - Enemy attacks (if they shoot)
-- `AIDecision` classes - When to act
+- `AIBrain` - State machine controlling AI decision making
+- `AIActionShoot3D` - Automatic weapon firing
+- `AIActionAimWeaponAtTarget3D` - Weapon aiming at targets
+- `AIActionMoveTowardsTarget3D` - Movement toward targets
+- `AIDecisionDetectTargetRadius3D` - Scan for targets within range
+- `AIDecisionLineOfSightToTarget3D` - Verify clear line-of-sight
+- State-based behavior (Inactive, Combat, Patrol, etc.)
 
-**How to Use:**
+**ProjectBlast Use Case: Hero Auto-Combat**
+
+Heroes in ProjectBlast use AIBrain for automatic combat when in Firing zone:
+
+```csharp
+// Hero.cs - AIBrain Integration
+public class Hero : MonoBehaviour
+{
+    public AIBrain AIBrain;
+    public AIActionShoot3D AIActionShoot;
+    public AIActionAimWeaponAtTarget3D AIActionAim;
+    public AIDecisionDetectTargetRadius3D AIDecisionDetect;
+    public AIDecisionLineOfSightToTarget3D AIDecisionLOS;
+    
+    // When hero enters Firing zone
+    public void StartFiring()
+    {
+        if (AIBrain == null) return;
+        
+        // Activate AI brain
+        AIBrain.BrainActive = true;
+        
+        // Transition to Combat state
+        if (HasAIState("Combat"))
+        {
+            AIBrain.TransitionToState("Combat");
+        }
+        
+        _isFiring = true;
+    }
+    
+    // Configure AI from HeroDataSO
+    private void ConfigureAI()
+    {
+        if (AIDecisionDetect != null)
+        {
+            AIDecisionDetect.Radius = DetectionRange;
+            AIDecisionDetect.TargetLayerMask = TargetLayerMask;
+            AIDecisionDetect.ObstacleMask = ObstacleLayerMask;
+        }
+        
+        if (AIDecisionLOS != null)
+        {
+            AIDecisionLOS.ObstacleLayerMask = ObstacleLayerMask;
+        }
+        
+        if (AIActionShoot != null)
+        {
+            AIActionShoot.TargetHandleWeaponAbility = HandleWeapon;
+        }
+    }
+}
+```
+
+**AIBrain State Configuration (Unity Inspector):**
+```
+State 0: "Inactive"
+  - Actions: (empty)
+  - Used when hero is in Passive/Active zones
+
+State 1: "Combat"  
+  - Actions: 
+    • AIActionShoot3D (fires weapon)
+    • AIActionAimWeaponAtTarget3D (aims at target)
+  - Decisions:
+    • AIDecisionDetectTargetRadius3D (finds enemies)
+    • AIDecisionLineOfSightToTarget3D (verifies LOS)
+  - Used when hero is in Firing zone
+```
+
+**Complete Flow:**
+```
+1. Hero deployed to Firing zone
+   ↓
+2. Hero.StartFiring() → AIBrain.BrainActive = true
+   ↓
+3. AIBrain transitions to "Combat" state
+   ↓
+4. AIDecisionDetectTargetRadius3D scans for enemies
+   ↓
+5. AIDecisionLineOfSightToTarget3D verifies clear shot
+   ↓
+6. AIActionAimWeaponAtTarget3D rotates weapon
+   ↓
+7. CharacterOrientation3D rotates hero body
+   ↓
+8. AIActionShoot3D fires weapon automatically
+   ↓
+9. Loop continues until hero leaves zone or ammo depleted
+```
+
+**Benefits of AIBrain Approach:**
+- ✅ Inspector-configurable - no code changes needed
+- ✅ Extensible - easy to add new states/behaviors
+- ✅ Reusable - same system for heroes and enemies
+- ✅ Robust - battle-tested TDE system
+- ✅ Clean - ~100 fewer lines vs manual approach
+
+**Enemy Pathing Use Case:**
+
 ```csharp
 // On Enemy prefab:
 // 1. Add Character component (CharacterTypes.AI)
@@ -225,9 +327,14 @@ public class HeroSpawner : MonoBehaviour
 // - Attack when in range (if you add AIActionShoot3D)
 ```
 
+**📖 Complete Guide:** `Documentation/HERO_AIBRAIN_INTEGRATION.md`
+
 **TDE Files to Reference:**
 - `Assets/TopDownEngine/Common/Scripts/Characters/AI/AIBrain.cs`
-- `Assets/TopDownEngine/Common/Scripts/Characters/AI/Advanced/AIActionMoveTowardsTarget3D.cs`
+- `Assets/TopDownEngine/Common/Scripts/Characters/AI/Advanced/AIActionShoot3D.cs`
+- `Assets/TopDownEngine/Common/Scripts/Characters/AI/Advanced/AIActionAimWeaponAtTarget3D.cs`
+- `Assets/TopDownEngine/Common/Scripts/Characters/AI/Decisions/AIDecisionDetectTargetRadius3D.cs`
+- `Assets/TopDownEngine/Common/Scripts/Characters/AI/Decisions/AIDecisionLineOfSightToTarget3D.cs`
 
 ---
 

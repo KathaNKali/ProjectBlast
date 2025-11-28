@@ -19,11 +19,10 @@ MonoBehaviour:
   DamagePerShot: 10
   DamageType: 0
   AmmoPerShot: 1
-  ProjectilePrefab: {fileID: 1565775507863266, guid: d75a59215c6fb44b8a9a09e1317dc853,
-    type: 3}
+  ProjectilePrefab: {fileID: 0}
   ProjectileSpeed: 1
-  ProjectileLifetime: 3
-  MaxRange: 25
+  ProjectileLifetime: 1.85
+  MaxRange: 5
   WeaponModelPrefab: {fileID: 0}
   MuzzleFlashPrefab: {fileID: 0}
   FireSound: {fileID: 0}

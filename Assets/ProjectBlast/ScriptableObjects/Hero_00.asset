@@ -19,16 +19,20 @@ MonoBehaviour:
   MaxHealth: 100
   StartingHealth: 100
   UnlimitedAmmo: 0
-  StartingAmmo: 100
-  LowAmmoThreshold: 20
-  DetectionRange: 20
-  TargetSearchInterval: 0.5
-  FireRate: 2.99
+  StartingAmmo: 10
+  LowAmmoThreshold: 10
+  DetectionRange: 5.8
+  TargetSearchInterval: 0.25
+  FireRate: 0.1
   TargetLayerMask:
     serializedVersion: 2
     m_Bits: 8192
-  TargetTags: []
+  ObstacleLayerMask:
+    serializedVersion: 2
+    m_Bits: 256
+  TargetTags:
+  - Enemy
   DefaultWeaponPrefab: {fileID: 114020998038657194, guid: d75a59215c6fb44b8a9a09e1317dc853,
     type: 3}
-  _cachedDPS: 29.9
-  _cachedAmmoLifetime: 33.444817
+  _cachedDPS: 1
+  _cachedAmmoLifetime: 100

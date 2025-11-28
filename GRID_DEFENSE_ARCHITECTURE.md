@@ -257,26 +257,73 @@ namespace YourGame.Grid
 
 ---
 
-## 👤 Core System 2: Hero System
+## 👤 Core System 2: Hero System (AIBrain Integration)
 
 ### **Purpose:** 
-Represents individual heroes with combat stats, positioning, and auto-fire behavior.
+Represents individual heroes with **automatic combat using TDE's AIBrain system**. Heroes engage enemies when in Firing zone using AI-driven targeting, aiming, and shooting.
 
-### **Approach:**
-- **Option A:** Extend TopDown Engine's `Character` class (simpler, reuses weapon system)
-- **Option B:** Create custom Hero class (more control, less dependencies)
+### **Current Implementation (Nov 28, 2025):**
+ProjectBlast heroes use **TDE's AIBrain** instead of manual combat code. This provides:
+- ✅ Inspector-configurable AI behavior
+- ✅ Automatic target detection with line-of-sight
+- ✅ Zone-based combat activation
+- ✅ Data-driven configuration via HeroDataSO
+- ✅ Cleaner architecture (~100 fewer lines)
 
-**Recommendation:** Use Option A initially for rapid prototyping.
+### **Key Components:**
 
-### **Implementation (Hybrid Approach):**
+**TDE Components:**
+- `Character` (CharacterTypes.Player, Type3D)
+- `Health` - Hit points and damage
+- `CharacterHandleWeapon` - Weapon management
+- `CharacterOrientation3D` - Body rotation
+- `TopDownController3D` - 3D controller
+- **`AIBrain`** - AI state machine
+- **`AIActionShoot3D`** - Auto-firing
+- **`AIActionAimWeaponAtTarget3D`** - Weapon aiming
+- **`AIDecisionDetectTargetRadius3D`** - Enemy detection
+- **`AIDecisionLineOfSightToTarget3D`** - LOS checking
+
+**ProjectBlast Components:**
+- `Hero.cs` - Orchestration layer (686 lines)
+- `HeroDataSO` - Configuration data (ScriptableObject)
+
+### **Combat Flow:**
+
+```
+Hero enters Firing zone
+  ↓
+Hero.StartFiring() called
+  ↓
+AIBrain.BrainActive = true
+  ↓
+AIBrain transitions to "Combat" state
+  ↓
+AIDecisionDetectTargetRadius3D scans for enemies
+  ↓
+AIDecisionLineOfSightToTarget3D verifies clear shot
+  ↓
+AIActionAimWeaponAtTarget3D rotates weapon
+  ↓
+CharacterOrientation3D rotates body
+  ↓
+AIActionShoot3D fires weapon
+  ↓
+Ammo consumed → Monitor for depletion
+  ↓
+Loop continues until zone exit or ammo depleted
+```
+
+### **Implementation Pattern (Current):**
 
 ```csharp
 using UnityEngine;
 using MoreMountains.TopDownEngine;
 using MoreMountains.Tools;
-using YourGame.Grid;
+using ProjectBlast.Grid;
+using ProjectBlast.Data;
 
-namespace YourGame.Heroes
+namespace ProjectBlast.Heroes
 {
     public enum HeroClass
     {

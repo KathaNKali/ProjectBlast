@@ -80,7 +80,10 @@ namespace ProjectBlast.Data
         public float FireRate = 2f;
         
         [Tooltip("What layers this hero can target")]
-        public LayerMask TargetLayerMask;
+        public LayerMask TargetLayerMask ;
+        
+        [Tooltip("Obstacle layers for line-of-sight checking (TDE auto-aim)")]
+        public LayerMask ObstacleLayerMask = 1 << 8; // Default to "Obstacles" layer
         
         [Tooltip("Optional tags to filter targets (e.g., 'Boss', 'Flying')")]
         public string[] TargetTags;

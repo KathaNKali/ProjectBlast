@@ -113,7 +113,8 @@ namespace MoreMountains.TopDownEngine
 		/// </summary>
 		protected override void SetAim()
 		{
-			_aimDirection = (Target.transform.position - _raycastOrigin).normalized;
+			// Calculate direction from weapon/character to target (NOT normalized for proper aiming)
+			_aimDirection = Target.transform.position - _raycastOrigin;
 			_weaponAim.SetCurrentAim(_aimDirection, ApplyAutoAimAsLastDirection);
 		}
 
