@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1dcb0b162781842d3b76e666071dff34, type: 3}
   m_Name: Hero_00
   m_EditorClassIdentifier: Assembly-CSharp::ProjectBlast.Data.HeroDataSO
-  HeroName: New Hero
-  HeroClass: 0
-  Icon: {fileID: 0}
+  HeroName: Tank
+  HeroClass: 1
+  Icon: {fileID: 21300000, guid: 8f6fc5f23ee901d449ed94ded8d1a85e, type: 3}
   Description: A brave hero ready for battle.
   MaxHealth: 100
   StartingHealth: 100
@@ -32,7 +32,6 @@ MonoBehaviour:
     m_Bits: 256
   TargetTags:
   - Enemy
-  DefaultWeaponPrefab: {fileID: 114020998038657194, guid: d75a59215c6fb44b8a9a09e1317dc853,
-    type: 3}
-  _cachedDPS: 1
-  _cachedAmmoLifetime: 100
+  DefaultWeaponPrefab: {fileID: 0}
+  _cachedDPS: 0
+  _cachedAmmoLifetime: 0

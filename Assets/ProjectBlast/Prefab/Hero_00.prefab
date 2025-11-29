@@ -45472,7 +45472,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectBlast.Heroes.Hero
   HeroData: {fileID: 11400000, guid: 87cb1754391b84fe384f2cfb92ba9f77, type: 2}
-  CurrentGridSlot:
+  CurrentGridSlotPublic:
     _zone: 0
     _row: 0
     _column: 0
@@ -45481,6 +45481,11 @@ MonoBehaviour:
   Health: {fileID: 0}
   HandleWeapon: {fileID: 0}
   Orientation3D: {fileID: 0}
+  AIBrain: {fileID: 0}
+  AIActionShoot: {fileID: 0}
+  AIActionAim: {fileID: 0}
+  AIDecisionDetect: {fileID: 0}
+  AIDecisionLOS: {fileID: 0}
   WeaponAttachment: {fileID: 141769260011890700}
   _displayCurrentAmmo: 0
   _displayCurrentTarget: {fileID: 0}

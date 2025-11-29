@@ -32,7 +32,9 @@ namespace ProjectBlast.Heroes
         public HeroDataSO HeroData;
         
         [Header("Grid Integration")]
-        public GridSlot CurrentGridSlot;
+        [Tooltip("Current grid slot - automatically triggers zone change detection")]
+        public GridSlot CurrentGridSlotPublic; // Public for Inspector visibility
+        private GridSlot _currentGridSlot;
         
         [Header("Visual Feedback")]
         public Material HighlightMaterial;
@@ -97,9 +99,30 @@ namespace ProjectBlast.Heroes
         
         #region Public Properties
         
-        public bool IsInFiringZone => CurrentGridSlot != null && CurrentGridSlot.Zone == GridZone.Firing;
-        public bool IsInActiveZone => CurrentGridSlot != null && CurrentGridSlot.Zone == GridZone.Active;
-        public bool IsInPassiveZone => CurrentGridSlot != null && CurrentGridSlot.Zone == GridZone.Passive;
+        /// <summary>
+        /// Current grid slot with automatic zone change detection
+        /// </summary>
+        public GridSlot CurrentGridSlot
+        {
+            get => _currentGridSlot;
+            set
+            {
+                GridZone? oldZone = _currentGridSlot?.Zone;
+                _currentGridSlot = value;
+                CurrentGridSlotPublic = value; // Update Inspector field
+                GridZone? newZone = _currentGridSlot?.Zone;
+                
+                // Detect zone change and trigger callback
+                if (oldZone != newZone)
+                {
+                    OnZoneChanged(oldZone, newZone);
+                }
+            }
+        }
+        
+        public bool IsInFiringZone => _currentGridSlot != null && _currentGridSlot.Zone == GridZone.Firing;
+        public bool IsInActiveZone => _currentGridSlot != null && _currentGridSlot.Zone == GridZone.Active;
+        public bool IsInPassiveZone => _currentGridSlot != null && _currentGridSlot.Zone == GridZone.Passive;
         public bool IsDead => _isDead;
         public bool IsAlive => !_isDead && Health != null && Health.CurrentHealth > 0;
         public bool IsOutOfAmmo => !UnlimitedAmmo && _isOutOfAmmo;
@@ -130,6 +153,14 @@ namespace ProjectBlast.Heroes
             AIActionAim = GetComponentInChildren<AIActionAimWeaponAtTarget3D>();
             AIDecisionDetect = GetComponentInChildren<AIDecisionDetectTargetRadius3D>();
             AIDecisionLOS = GetComponentInChildren<AIDecisionLineOfSightToTarget3D>();
+            
+            // CRITICAL: Disable AI Brain immediately on instantiation
+            // This prevents AI from activating before hero reaches Firing zone
+            if (AIBrain != null)
+            {
+                AIBrain.BrainActive = false;
+                Debug.Log($"[Hero] {gameObject.name} AIBrain disabled in Awake() - will activate when entering Firing zone");
+            }
             
             _renderer = GetComponent<Renderer>();
             if (_renderer != null)
@@ -281,25 +312,58 @@ namespace ProjectBlast.Heroes
         
         public virtual void EquipWeapon(Weapon weaponPrefab)
         {
-            if (HandleWeapon == null || weaponPrefab == null)
+            if (HandleWeapon == null)
             {
-                Debug.LogError($"[Hero] {HeroName} cannot equip weapon.");
+                Debug.LogError($"[Hero] {HeroName} cannot equip weapon - HandleWeapon component is null!");
                 return;
             }
             
+            if (weaponPrefab == null)
+            {
+                Debug.LogError($"[Hero] {HeroName} cannot equip weapon - weaponPrefab is null!");
+                return;
+            }
+            
+            // Ensure CharacterHandleWeapon has WeaponAttachment set
+            if (HandleWeapon.WeaponAttachment == null)
+            {
+                if (WeaponAttachment != null)
+                {
+                    HandleWeapon.WeaponAttachment = WeaponAttachment;
+                    Debug.Log($"[Hero] {HeroName} assigned WeaponAttachment to CharacterHandleWeapon");
+                }
+                else
+                {
+                    Debug.LogError($"[Hero] {HeroName} cannot equip weapon - WeaponAttachment is null!");
+                    return;
+                }
+            }
+            
+            Debug.Log($"[Hero] {HeroName} equipping weapon: {weaponPrefab.WeaponName}");
+            
             // Let TDE handle instantiation through ChangeWeapon
             HandleWeapon.ChangeWeapon(weaponPrefab, weaponPrefab.WeaponName);
+            
+            // Give TDE a frame to instantiate the weapon
+            StartCoroutine(WaitForWeaponEquip());
+        }
+        
+        private System.Collections.IEnumerator WaitForWeaponEquip()
+        {
+            yield return null; // Wait one frame
             
             // Get reference to the TDE-instantiated weapon
             _currentWeapon = HandleWeapon.CurrentWeapon;
             
             if (_currentWeapon == null)
             {
-                Debug.LogError($"[Hero] {HeroName} weapon instantiation failed!");
-                return;
+                Debug.LogError($"[Hero] {HeroName} weapon instantiation failed! HandleWeapon.CurrentWeapon is null after ChangeWeapon().");
+                Debug.LogError($"[Hero] Check that: 1) WeaponAttachment exists, 2) Weapon prefab is valid, 3) CharacterHandleWeapon is properly configured");
             }
-            
-            Debug.Log($"[Hero] {HeroName} equipped weapon. AI will control shooting.");
+            else
+            {
+                Debug.Log($"[Hero] {HeroName} equipped weapon '{_currentWeapon.WeaponName}' successfully. AI will control shooting.");
+            }
         }
         
         public virtual void StartFiring()
@@ -377,15 +441,10 @@ namespace ProjectBlast.Heroes
             // Stop shooting
             if (HandleWeapon != null) HandleWeapon.ShootStop();
             
-            // Unequip weapon when leaving Firing zone
-            if (_currentWeapon != null)
-            {
-                Debug.Log($"[Hero] {HeroName} unequipping weapon.");
-                Destroy(_currentWeapon.gameObject);
-                _currentWeapon = null;
-            }
+            // Keep weapon equipped for potential re-entry to Firing zone
+            // Weapon will only be destroyed on hero removal/death
             
-            Debug.Log($"[Hero] {HeroName} stopped firing and unequipped weapon.");
+            Debug.Log($"[Hero] {HeroName} stopped firing. Weapon kept equipped for potential re-entry.");
         }
         
         #endregion
@@ -484,8 +543,15 @@ namespace ProjectBlast.Heroes
         {
             _displayCurrentAmmo = _currentAmmo;
             _displayCurrentTarget = CurrentTarget;
-            _displayCurrentSlot = CurrentGridSlot != null ? CurrentGridSlot.GetCoordinateLabel() : "None";
-            _displayCurrentZone = CurrentGridSlot != null ? CurrentGridSlot.Zone.ToString() : "None";
+            _displayCurrentSlot = _currentGridSlot != null ? _currentGridSlot.GetCoordinateLabel() : "None";
+            _displayCurrentZone = _currentGridSlot != null ? _currentGridSlot.Zone.ToString() : "None";
+            
+            // DEFENSIVE: Ensure AI only active in Firing zone (safety net)
+            if (AIBrain != null && AIBrain.BrainActive && !IsInFiringZone)
+            {
+                Debug.LogWarning($"[Hero] {HeroName} AI was active outside Firing zone! Current: {_currentGridSlot?.Zone}. Deactivating...");
+                StopFiring();
+            }
             
             // Track weapon firing for ammo consumption
             // Only consume ammo when weapon transitions from NOT firing to firing
@@ -529,6 +595,49 @@ namespace ProjectBlast.Heroes
             {
                 Gizmos.color = Color.cyan;
                 Gizmos.DrawRay(_currentWeapon.transform.position, _currentWeapon.transform.forward * 5f);
+            }
+        }
+        
+        #endregion
+        
+        #region Zone Management
+        
+        /// <summary>
+        /// Called automatically when hero changes grid zones.
+        /// Handles starting/stopping combat based on zone.
+        /// </summary>
+        protected virtual void OnZoneChanged(GridZone? oldZone, GridZone? newZone)
+        {
+            Debug.Log($"[Hero] {HeroName} zone changed: {oldZone?.ToString() ?? "None"} → {newZone?.ToString() ?? "None"}");
+            
+            // Entering Firing zone - start combat
+            if (newZone == GridZone.Firing)
+            {
+                Debug.Log($"[Hero] {HeroName} entered Firing zone - starting combat automatically");
+                StartFiring();
+            }
+            // Leaving Firing zone - stop combat
+            else if (oldZone == GridZone.Firing && newZone != GridZone.Firing)
+            {
+                Debug.Log($"[Hero] {HeroName} left Firing zone - stopping combat");
+                StopFiring();
+            }
+            // Entering non-Firing zones - ensure AI is inactive
+            else if (newZone == GridZone.Active || newZone == GridZone.Passive)
+            {
+                EnsureAIInactive();
+            }
+        }
+        
+        /// <summary>
+        /// Ensures AI Brain is inactive (safety check for non-Firing zones)
+        /// </summary>
+        private void EnsureAIInactive()
+        {
+            if (AIBrain != null && AIBrain.BrainActive)
+            {
+                Debug.LogWarning($"[Hero] {HeroName} AI was active in non-Firing zone! Deactivating...");
+                StopFiring();
             }
         }
         
