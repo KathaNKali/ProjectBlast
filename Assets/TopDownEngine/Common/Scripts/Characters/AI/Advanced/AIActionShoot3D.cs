@@ -58,17 +58,21 @@ namespace MoreMountains.TopDownEngine
 			}
 		}
 
-		/// <summary>
-		/// On PerformAction we face and aim if needed, and we shoot
-		/// </summary>
-		public override void PerformAction()
+	/// <summary>
+	/// On PerformAction we face and aim if needed, and we shoot
+	/// </summary>
+	public override void PerformAction()
+	{
+		// Safety check: Don't perform action if weapon system isn't ready
+		if (TargetHandleWeaponAbility == null || TargetHandleWeaponAbility.CurrentWeapon == null)
 		{
-			MakeChangesToTheWeapon();
-			TestAimAtTarget();
-			Shoot();
+			return;
 		}
-
-		/// <summary>
+		
+		MakeChangesToTheWeapon();
+		TestAimAtTarget();
+		Shoot();
+	}		/// <summary>
 		/// Makes changes to the weapon to ensure it works ok with AI scripts
 		/// </summary>
 		protected virtual void MakeChangesToTheWeapon()
@@ -163,18 +167,25 @@ namespace MoreMountains.TopDownEngine
 			}
 		}
 
-		/// <summary>
-		/// When entering the state we reset our shoot counter and grab our weapon
-		/// </summary>
-		public override void OnEnterState()
+	/// <summary>
+	/// When entering the state we reset our shoot counter and grab our weapon
+	/// </summary>
+	public override void OnEnterState()
+	{
+		base.OnEnterState();
+		_numberOfShoots = 0;
+		
+		// Safety check: Only access CurrentWeapon if it exists
+		if (TargetHandleWeaponAbility != null && TargetHandleWeaponAbility.CurrentWeapon != null)
 		{
-			base.OnEnterState();
-			_numberOfShoots = 0;
 			_weaponAim = TargetHandleWeaponAbility.CurrentWeapon.gameObject.MMGetComponentNoAlloc<WeaponAim>();
 			_projectileWeapon = TargetHandleWeaponAbility.CurrentWeapon.gameObject.MMGetComponentNoAlloc<ProjectileWeapon>();
 		}
-
-		/// <summary>
+		else
+		{
+			Debug.LogWarning($"[AIActionShoot3D] OnEnterState called but CurrentWeapon is null on {gameObject.name}. Weapon may not be equipped yet.");
+		}
+	}		/// <summary>
 		/// When exiting the state we make sure we're not shooting anymore
 		/// </summary>
 		public override void OnExitState()

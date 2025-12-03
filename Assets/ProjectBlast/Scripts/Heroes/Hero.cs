@@ -243,13 +243,25 @@ namespace ProjectBlast.Heroes
             
             HandleWeapon.WeaponAttachment = WeaponAttachment;
             
+            // Equip weapon immediately on initialization
+            // This ensures weapon is ready when AIBrain activates in Firing zone
+            if (WeaponPrefab != null)
+            {
+                Debug.Log($"[Hero] {HeroName} equipping weapon on initialization: {WeaponPrefab.WeaponName}");
+                EquipWeapon(WeaponPrefab);
+            }
+            else
+            {
+                Debug.LogWarning($"[Hero] {HeroName} has no weapon prefab assigned in HeroDataSO!");
+            }
+            
             // Disable AI Brain initially - will activate when entering Firing zone
             if (AIBrain != null)
             {
                 AIBrain.BrainActive = false;
             }
             
-            Debug.Log($"[Hero] {HeroName} weapon system and AI initialized. AI will activate when entering Firing zone.");
+            Debug.Log($"[Hero] {HeroName} weapon system initialized. Weapon equipped. AI will activate when entering Firing zone.");
         }
         
         /// <summary>
@@ -380,13 +392,26 @@ namespace ProjectBlast.Heroes
                 return;
             }
             
-            // Equip weapon when entering Firing zone
+            // Weapon should already be equipped from initialization
+            // If not, try to equip it now
             if (_currentWeapon == null && WeaponPrefab != null)
             {
+                Debug.LogWarning($"[Hero] {HeroName} weapon not equipped during init, equipping now...");
                 EquipWeapon(WeaponPrefab);
+                // Note: AIBrain will activate next frame after weapon is equipped
+                StartCoroutine(ActivateAIAfterWeaponEquip());
+                return;
             }
             
             // Activate AI Brain for combat
+            ActivateAICombat();
+        }
+        
+        /// <summary>
+        /// Activates AI Brain for combat behavior
+        /// </summary>
+        private void ActivateAICombat()
+        {
             if (AIBrain == null)
             {
                 Debug.LogWarning($"[Hero] {HeroName} cannot start firing - no AI Brain!");
@@ -411,6 +436,23 @@ namespace ProjectBlast.Heroes
             else
             {
                 Debug.Log($"[Hero] {HeroName} AI activated - using current state (Combat state not found).");
+            }
+        }
+        
+        /// <summary>
+        /// Waits for weapon to equip, then activates AI
+        /// </summary>
+        private System.Collections.IEnumerator ActivateAIAfterWeaponEquip()
+        {
+            yield return null; // Wait one frame for weapon equip
+            
+            if (_currentWeapon != null)
+            {
+                ActivateAICombat();
+            }
+            else
+            {
+                Debug.LogError($"[Hero] {HeroName} weapon still null after equip attempt! Cannot activate AI.");
             }
         }
         

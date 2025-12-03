@@ -21,7 +21,7 @@ MonoBehaviour:
   UnlimitedAmmo: 0
   StartingAmmo: 10
   LowAmmoThreshold: 10
-  DetectionRange: 5.8
+  DetectionRange: 5
   TargetSearchInterval: 0.25
   FireRate: 0.1
   TargetLayerMask:

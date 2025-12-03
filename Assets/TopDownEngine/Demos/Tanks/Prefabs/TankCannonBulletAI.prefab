@@ -4933,6 +4933,7 @@ GameObject:
   - component: {fileID: 54994276034465240}
   - component: {fileID: 114675558199215844}
   - component: {fileID: 114469000093533656}
+  - component: {fileID: 2895321207311194705}
   m_Layer: 18
   m_Name: TankCannonBulletAI
   m_TagString: Untagged
@@ -5179,13 +5180,31 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1854097648223014}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e6b5efd8658a97749a87733fd4bddb28, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   PushPower: 50
   PositionOffset: 0
+--- !u!114 &2895321207311194705
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1854097648223014}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9773f7966ffc446ef9afea0b10d44d7a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectBlast.Data.ProjectileDamageConfigurator
+  BaseDamage: 10
+  UseBaseDamageOnAwake: 1
+  DamageOnTouch: {fileID: 0}
+  ProjectileComponent: {fileID: 0}
+  _currentDamage: 0
+  _damageConfigured: 0
 --- !u!1 &1773329403652084787
 GameObject:
   m_ObjectHideFlags: 0
