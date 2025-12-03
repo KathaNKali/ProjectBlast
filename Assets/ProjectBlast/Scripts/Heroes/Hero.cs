@@ -1,6 +1,7 @@
 using UnityEngine;
 using ProjectBlast.Grid;
 using ProjectBlast.Data;
+using ProjectBlast.AI;
 using MoreMountains.TopDownEngine;
 using MoreMountains.Tools;
 
@@ -49,7 +50,7 @@ namespace ProjectBlast.Heroes
         public AIBrain AIBrain;
         public AIActionShoot3D AIActionShoot;
         public AIActionAimWeaponAtTarget3D AIActionAim;
-        public AIDecisionDetectTargetRadius3D AIDecisionDetect;
+        public AIDecisionDetectTargetPriority3D AIDecisionDetectPriority; // Custom priority-based detection
         public AIDecisionLineOfSightToTarget3D AIDecisionLOS;
         
         [Header("Weapon Configuration")]
@@ -151,7 +152,7 @@ namespace ProjectBlast.Heroes
             AIBrain = GetComponentInChildren<AIBrain>();
             AIActionShoot = GetComponentInChildren<AIActionShoot3D>();
             AIActionAim = GetComponentInChildren<AIActionAimWeaponAtTarget3D>();
-            AIDecisionDetect = GetComponentInChildren<AIDecisionDetectTargetRadius3D>();
+            AIDecisionDetectPriority = GetComponentInChildren<AIDecisionDetectTargetPriority3D>();
             AIDecisionLOS = GetComponentInChildren<AIDecisionLineOfSightToTarget3D>();
             
             // CRITICAL: Disable AI Brain immediately on instantiation
@@ -284,14 +285,16 @@ namespace ProjectBlast.Heroes
             // Set AIBrain owner
             AIBrain.Owner = gameObject;
             
-            // Configure target detection
-            if (AIDecisionDetect != null)
+            // Configure target detection with priority
+            if (AIDecisionDetectPriority != null)
             {
-                AIDecisionDetect.Radius = DetectionRange;
-                AIDecisionDetect.TargetLayerMask = TargetLayerMask;
-                AIDecisionDetect.ObstacleMask = ObstacleLayerMask;
-                AIDecisionDetect.TargetCheckFrequency = TargetSearchInterval;
-                Debug.Log($"[Hero] {HeroName} AI Detection configured - Range: {DetectionRange}m, Scan: {TargetSearchInterval}s");
+                // Priority-based detection uses MMConeOfVision (configured in prefab)
+                // No runtime configuration needed - radius/angle set on MMConeOfVision component
+                Debug.Log($"[Hero] {HeroName} AI Priority Detection configured - Priority: {AIDecisionDetectPriority.Priority}");
+            }
+            else
+            {
+                Debug.LogWarning($"[Hero] {HeroName} has no AIDecisionDetectTargetPriority3D! Target selection may not work correctly.");
             }
             
             // Configure line-of-sight checking

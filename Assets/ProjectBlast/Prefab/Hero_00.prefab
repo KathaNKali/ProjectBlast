@@ -13410,7 +13410,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 256
   VisionRadius: 17.88
-  VisionAngle: 12
+  VisionAngle: 125
   Direction: {x: 0, y: 0, z: 0}
   EulerAngles: {x: 0, y: 0, z: 0}
   Offset: {x: 0, y: 0, z: 0}
@@ -45476,7 +45476,7 @@ MonoBehaviour:
   AIBrain: {fileID: 0}
   AIActionShoot: {fileID: 0}
   AIActionAim: {fileID: 0}
-  AIDecisionDetect: {fileID: 0}
+  AIDecisionDetectPriority: {fileID: 0}
   AIDecisionLOS: {fileID: 0}
   WeaponAttachment: {fileID: 141769260011890700}
   _displayCurrentAmmo: 0
@@ -56258,13 +56258,9 @@ GameObject:
   - component: {fileID: 8593435027735045243}
   - component: {fileID: 8593149380626439685}
   - component: {fileID: 8592899605735082425}
-  - component: {fileID: 8593595384972061815}
-  - component: {fileID: 8593884631856411307}
-  - component: {fileID: 8562352844383890700}
-  - component: {fileID: 8562352844383890701}
-  - component: {fileID: 8562352844383890690}
   - component: {fileID: 8562352844383890716}
   - component: {fileID: 5264308353878262575}
+  - component: {fileID: 7079713942658232907}
   m_Layer: 10
   m_Name: AIBrain
   m_TagString: Untagged
@@ -56305,10 +56301,9 @@ MonoBehaviour:
     Actions:
       array:
       - {fileID: 8592899605735082425}
-      - {fileID: 8593595384972061815}
     Transitions:
       array:
-      - Decision: {fileID: 8562352844383890700}
+      - Decision: {fileID: 7079713942658232907}
         TrueState: WaitToShoot
         FalseState: 
   - StateName: WaitToShoot
@@ -56326,7 +56321,7 @@ MonoBehaviour:
       - {fileID: 8593149380626439685}
     Transitions:
       array:
-      - Decision: {fileID: 8562352844383890700}
+      - Decision: {fileID: 7079713942658232907}
         TrueState: 
         FalseState: Seeking
   TimeInThisState: 0
@@ -56373,78 +56368,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   InitializationMode: 0
   Label: 
---- !u!114 &8593595384972061815
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8562352844383890691}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5758bd960e1ca6d41828c58712425d60, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  InitializationMode: 0
-  Label: 
-  OnlyIfTargetIsNull: 0
---- !u!114 &8593884631856411307
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8562352844383890691}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a21818f4def5bf646bec3d25770336cb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Label: BackToPatrollingTime
-  AfterTimeMin: 7
-  AfterTimeMax: 7
---- !u!114 &8562352844383890700
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8562352844383890691}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0a8321e473cf29849bf298b98b8f76d7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Label: 
-  SetTargetToNullIfNoneIsFound: 0
-  TargetConeOfVision: {fileID: 141769260132801174}
---- !u!114 &8562352844383890701
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8562352844383890691}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 43f2e42d0ba8c7e418888cebbd3b3d5a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  InitializationMode: 0
-  Label: 
---- !u!114 &8562352844383890690
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8562352844383890691}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 78c77c71de934d5409ac7258ff688672, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Label: 
 --- !u!114 &8562352844383890716
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -56477,3 +56400,21 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8448
   LineOfSightOffset: {x: 0, y: 0, z: 0}
+--- !u!114 &7079713942658232907
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8562352844383890691}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9528a58f699b543ec9de1134302fd10f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectBlast.AI.AIDecisionDetectTargetPriority3D
+  Label: 
+  TargetConeOfVision: {fileID: 141769260132801174}
+  Priority: 0
+  SetTargetToNullIfNoneIsFound: 1
+  _visibleTargetsCount: 0
+  _currentTargetName: 
