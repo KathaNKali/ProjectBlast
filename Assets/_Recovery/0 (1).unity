@@ -224,10 +224,25 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 141769260132801180, guid: 864ab1d1aa76246f699722a847a7a6e7,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 141769261056687965, guid: 864ab1d1aa76246f699722a847a7a6e7,
+        type: 3}
+      propertyPath: m_Range
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 141769261056687965, guid: 864ab1d1aa76246f699722a847a7a6e7,
+        type: 3}
+      propertyPath: m_Intensity
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 141769261663588872, guid: 864ab1d1aa76246f699722a847a7a6e7,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: -18.93
+      value: -4.00488
       objectReference: {fileID: 0}
     - target: {fileID: 141769261663588872, guid: 864ab1d1aa76246f699722a847a7a6e7,
         type: 3}
@@ -278,6 +293,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Enemy_00
+      objectReference: {fileID: 0}
+    - target: {fileID: 8593149380626439685, guid: 864ab1d1aa76246f699722a847a7a6e7,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
