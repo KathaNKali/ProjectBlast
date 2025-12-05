@@ -13409,7 +13409,7 @@ MonoBehaviour:
   ObstacleMask:
     serializedVersion: 2
     m_Bits: 256
-  VisionRadius: 17.88
+  VisionRadius: 25
   VisionAngle: 125
   Direction: {x: 0, y: 0, z: 0}
   EulerAngles: {x: 0, y: 0, z: 0}

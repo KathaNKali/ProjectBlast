@@ -5072,11 +5072,11 @@ MonoBehaviour:
     m_Bits: 12032
   Owner: {fileID: 0}
   TriggerFilter: 195
-  MinDamageCaused: 100
-  MaxDamageCaused: 10
+  MinDamageCaused: 10
+  MaxDamageCaused: 20
   TypedDamages: []
   DamageDirectionMode: 1
-  DamageCausedKnockbackType: 1
+  DamageCausedKnockbackType: 0
   DamageCausedKnockbackDirection: 3
   DamageCausedKnockbackForce: {x: 10, y: 2, z: 0}
   InvincibilityDuration: 0.1
@@ -5199,7 +5199,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9773f7966ffc446ef9afea0b10d44d7a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectBlast.Data.ProjectileDamageConfigurator
-  BaseDamage: 100
+  BaseDamage: 10
   UseBaseDamageOnAwake: 1
   DamageOnTouch: {fileID: 0}
   ProjectileComponent: {fileID: 0}
