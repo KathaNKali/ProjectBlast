@@ -30,6 +30,10 @@ namespace ProjectBlast.Data
         [Tooltip("Apply base damage on Awake (if not set dynamically)")]
         public bool UseBaseDamageOnAwake = true;
         
+        [Tooltip("Invincibility duration after hit (0 = no invincibility, allows multiple bullets to hit)")]
+        [Range(0f, 2f)]
+        public float InvincibilityDuration = 0f;
+        
         [Header("References")]
         [Tooltip("DamageOnTouch component (auto-found if null)")]
         public DamageOnTouch DamageOnTouch;
@@ -88,9 +92,13 @@ namespace ProjectBlast.Data
             DamageOnTouch.MinDamageCaused = damage;
             DamageOnTouch.MaxDamageCaused = damage;
             
+            // CRITICAL: Set invincibility duration to 0 to allow multiple projectiles to hit the same target
+            // Without this, the first bullet grants invincibility frames, blocking subsequent bullets
+            DamageOnTouch.InvincibilityDuration = InvincibilityDuration;
+            
             _damageConfigured = true;
             
-            Debug.Log($"[ProjectileDamageConfigurator] Projectile damage set to {damage}");
+            Debug.Log($"[ProjectileDamageConfigurator] Projectile damage set to {damage}, invincibility: {InvincibilityDuration}s");
         }
         
         /// <summary>
@@ -150,7 +158,8 @@ namespace ProjectBlast.Data
             {
                 DamageOnTouch.MinDamageCaused = BaseDamage;
                 DamageOnTouch.MaxDamageCaused = BaseDamage;
-                Debug.Log($"[ProjectileDamageConfigurator] Applied base damage {BaseDamage} to DamageOnTouch in editor");
+                DamageOnTouch.InvincibilityDuration = InvincibilityDuration;
+                Debug.Log($"[ProjectileDamageConfigurator] Applied base damage {BaseDamage} and invincibility {InvincibilityDuration}s to DamageOnTouch in editor");
                 UnityEditor.EditorUtility.SetDirty(this);
             }
             else

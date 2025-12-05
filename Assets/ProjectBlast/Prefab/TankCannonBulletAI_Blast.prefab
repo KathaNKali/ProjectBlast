@@ -5079,7 +5079,7 @@ MonoBehaviour:
   DamageCausedKnockbackType: 0
   DamageCausedKnockbackDirection: 3
   DamageCausedKnockbackForce: {x: 10, y: 2, z: 0}
-  InvincibilityDuration: 0.1
+  InvincibilityDuration: 0
   RepeatDamageOverTime: 0
   AmountOfRepeats: 3
   DurationBetweenRepeats: 1
@@ -5201,6 +5201,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectBlast.Data.ProjectileDamageConfigurator
   BaseDamage: 10
   UseBaseDamageOnAwake: 1
+  InvincibilityDuration: 0
   DamageOnTouch: {fileID: 0}
   ProjectileComponent: {fileID: 0}
   _currentDamage: 0

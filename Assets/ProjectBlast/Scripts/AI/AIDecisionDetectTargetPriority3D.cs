@@ -52,6 +52,12 @@ namespace ProjectBlast.AI
         public TargetPriority Priority = TargetPriority.Closest;
         
         /// <summary>
+        /// If true, locks onto first target until destroyed/lost. If false, continuously re-evaluates targets.
+        /// </summary>
+        [Tooltip("If true, locks onto first target until destroyed/lost. If false, continuously re-evaluates targets.")]
+        public bool LockOntoTarget = true;
+        
+        /// <summary>
         /// If true, sets Brain's Target to null when no targets found
         /// </summary>
         [Tooltip("If true, this decision will set the AI Brain's Target to null if no target is found")]
@@ -60,6 +66,7 @@ namespace ProjectBlast.AI
         [Header("Debug")]
         [SerializeField] private int _visibleTargetsCount;
         [SerializeField] private string _currentTargetName;
+        [SerializeField] private bool _isLockedOn;
         
         /// <summary>
         /// On Init we grab our MMConeOfVision
@@ -82,6 +89,26 @@ namespace ProjectBlast.AI
             {
                 Debug.LogError($"[AIDecisionDetectTargetPriority3D] No MMConeOfVision found on {gameObject.name}! This decision requires a MMConeOfVision component.");
             }
+            
+            _isLockedOn = false;
+        }
+        
+        /// <summary>
+        /// When entering a state, reset lock status
+        /// </summary>
+        public override void OnEnterState()
+        {
+            base.OnEnterState();
+            _isLockedOn = false;
+        }
+        
+        /// <summary>
+        /// When exiting a state, clear target lock
+        /// </summary>
+        public override void OnExitState()
+        {
+            base.OnExitState();
+            _isLockedOn = false;
         }
         
         /// <summary>
@@ -105,6 +132,25 @@ namespace ProjectBlast.AI
             
             _visibleTargetsCount = TargetConeOfVision.VisibleTargets.Count;
             
+            // If LockOntoTarget is enabled and we already have a target
+            if (LockOntoTarget && _brain.Target != null)
+            {
+                // Check if current target is still valid (exists and still in visible targets list)
+                if (_brain.Target != null && TargetConeOfVision.VisibleTargets.Contains(_brain.Target))
+                {
+                    // Keep locked onto current target
+                    _currentTargetName = _brain.Target.name;
+                    _isLockedOn = true;
+                    return true;
+                }
+                else
+                {
+                    // Current target lost (destroyed or out of cone) - unlock and find new target
+                    _isLockedOn = false;
+                    _brain.Target = null;
+                }
+            }
+            
             // No targets found
             if (TargetConeOfVision.VisibleTargets.Count == 0)
             {
@@ -112,25 +158,30 @@ namespace ProjectBlast.AI
                 {
                     _brain.Target = null;
                     _currentTargetName = "None";
+                    _isLockedOn = false;
                 }
                 return false;
             }
             
+            // Find new target (either first time, or previous target lost)
+            Transform selectedTarget = null;
+            
             // Single target - no sorting needed
             if (TargetConeOfVision.VisibleTargets.Count == 1)
             {
-                _brain.Target = TargetConeOfVision.VisibleTargets[0];
-                _currentTargetName = _brain.Target != null ? _brain.Target.name : "None";
-                return true;
+                selectedTarget = TargetConeOfVision.VisibleTargets[0];
             }
-            
-            // Multiple targets - sort based on priority
-            Transform selectedTarget = SelectTargetByPriority(TargetConeOfVision.VisibleTargets);
+            else
+            {
+                // Multiple targets - sort based on priority
+                selectedTarget = SelectTargetByPriority(TargetConeOfVision.VisibleTargets);
+            }
             
             if (selectedTarget != null)
             {
                 _brain.Target = selectedTarget;
                 _currentTargetName = selectedTarget.name;
+                _isLockedOn = LockOntoTarget;
                 return true;
             }
             else
@@ -139,6 +190,7 @@ namespace ProjectBlast.AI
                 {
                     _brain.Target = null;
                     _currentTargetName = "None";
+                    _isLockedOn = false;
                 }
                 return false;
             }
