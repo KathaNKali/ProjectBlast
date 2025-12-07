@@ -13410,7 +13410,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 256
   VisionRadius: 25
-  VisionAngle: 125
+  VisionAngle: 180
   Direction: {x: 0, y: 0, z: 0}
   EulerAngles: {x: 0, y: 0, z: 0}
   Offset: {x: 0, y: 0, z: 0}
@@ -56354,6 +56354,9 @@ MonoBehaviour:
   AimOrigin: 0
   ShootOffset: {x: 0, y: 1.8, z: 0}
   LockVerticalAim: 0
+  RequireAimLock: 1
+  AimAngleTolerance: 5
+  EnableSmartFiring: 1
 --- !u!114 &8592899605735082425
 MonoBehaviour:
   m_ObjectHideFlags: 0

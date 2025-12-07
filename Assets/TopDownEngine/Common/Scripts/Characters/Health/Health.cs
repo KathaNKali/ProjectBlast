@@ -500,10 +500,14 @@ namespace MoreMountains.TopDownEngine
 				StartCoroutine(DamageEnabled(invincibilityDuration));	
 			}
             
-			// we trigger a damage taken event
-			MMDamageTakenEvent.Trigger(this, instigator, CurrentHealth, damage, previousHealth, typedDamages);
-
-			// we update our animator
+		// we trigger a damage taken event
+		MMDamageTakenEvent.Trigger(this, instigator, CurrentHealth, damage, previousHealth, typedDamages);
+		
+		// Notify CombatCoordinator when bullet hits
+		if (CombatCoordinator.HasInstance)
+		{
+			CombatCoordinator.Instance.OnBulletHit(gameObject, damage);
+		}			// we update our animator
 			if (TargetAnimator != null)
 			{
 				TargetAnimator.SetTrigger("Damage");

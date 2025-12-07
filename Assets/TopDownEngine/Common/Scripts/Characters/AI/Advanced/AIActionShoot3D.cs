@@ -41,16 +41,25 @@ namespace MoreMountains.TopDownEngine
 	/// the maximum angle (in degrees) between weapon aim and target to allow shooting
 	[Tooltip("the maximum angle (in degrees) between weapon aim and target to allow shooting")]
 	[Range(0f, 45f)]
-	public float AimAngleTolerance = 5f;		protected CharacterOrientation3D _orientation3D;
-		protected Character _character;
-		protected WeaponAim _weaponAim;
-		protected ProjectileWeapon _projectileWeapon;
-		protected Vector3 _weaponAimDirection;
-		protected int _numberOfShoots = 0;
-		protected bool _shooting = false;
-		protected Weapon _targetWeapon;
-
-		/// <summary>
+	public float AimAngleTolerance = 5f;
+	
+	[Header("Smart Bullet Management")]
+	/// if true, coordinates with other heroes to avoid wasting bullets on already-doomed enemies
+	[Tooltip("if true, coordinates with other heroes to avoid wasting bullets on already-doomed enemies")]
+	public bool EnableSmartFiring = true;
+	
+	protected CharacterOrientation3D _orientation3D;
+	protected Character _character;
+	protected WeaponAim _weaponAim;
+	protected ProjectileWeapon _projectileWeapon;
+	protected Vector3 _weaponAimDirection;
+	protected int _numberOfShoots = 0;
+	protected bool _shooting = false;
+	protected Weapon _targetWeapon;
+	
+	// Smart bullet management
+	protected float _weaponDamagePerShot = 0f;
+	protected GameObject _lastTarget = null;		/// <summary>
 		/// On init we grab our CharacterHandleWeapon ability
 		/// </summary>
 		public override void Initialization()
@@ -161,38 +170,137 @@ namespace MoreMountains.TopDownEngine
 	/// </summary>
 	protected virtual void Shoot()
 	{
-		if (_numberOfShoots < 1)
+		// Check if weapon is aimed at target before shooting
+		if (RequireAimLock && !IsWeaponAimedAtTarget())
 		{
-			_targetWeapon = TargetHandleWeaponAbility.CurrentWeapon;
-			
-			// NEW: Check if weapon is aimed at target before shooting
-			if (RequireAimLock && !IsWeaponAimedAtTarget())
-			{
-				// Weapon is still aiming, don't shoot yet
-				// Stop shooting if it was previously shooting
-				if (_shooting)
-				{
-					TargetHandleWeaponAbility.ShootStop();
-				}
-				return;
-			}
-			
-			TargetHandleWeaponAbility.ShootStart();
-			_numberOfShoots++;
-		}
-		else
-		{
-			// Continue shooting only if still aimed (for auto-fire weapons)
-			if (RequireAimLock && !IsWeaponAimedAtTarget())
+			// Weapon is still aiming, don't shoot yet
+			if (_shooting || _numberOfShoots > 0)
 			{
 				TargetHandleWeaponAbility.ShootStop();
 			}
+			return;
+		}
+		
+		// Smart bullet management - request permission from coordinator
+		if (EnableSmartFiring)
+		{
+			// Update target tracking if changed
+			if (_brain.Target != null && _lastTarget != _brain.Target.gameObject)
+			{
+				// Release old target
+				if (_lastTarget != null && CombatCoordinator.HasInstance)
+				{
+					CombatCoordinator.Instance.ReleaseTarget(gameObject, _lastTarget);
+				}
+				
+				// Calculate weapon damage for new target
+				_weaponDamagePerShot = CalculateWeaponDamage();
+				_lastTarget = _brain.Target.gameObject;
+			}
+			
+			// ATOMIC: Request shot permission (check + track in one operation)
+			if (_brain.Target != null && CombatCoordinator.HasInstance)
+			{
+				if (!CombatCoordinator.Instance.RequestShot(gameObject, _brain.Target.gameObject, _weaponDamagePerShot))
+				{
+					// Permission denied - other heroes have already "doomed" this target
+					// KEEP TARGET LOCK - just stop firing and wait for enemy to die
+					// When enemy dies, OnCurrentTargetDied() will be called automatically
+					TargetHandleWeaponAbility.ShootStop();
+					_numberOfShoots = 0;
+					return; // Don't fire, but maintain target lock
+				}
+				// Permission granted - bullet is now tracked, proceed to fire
+			}
+		}
+		
+		// Fire the weapon
+		if (_numberOfShoots < 1)
+		{
+			_targetWeapon = TargetHandleWeaponAbility.CurrentWeapon;
+			TargetHandleWeaponAbility.ShootStart();
+			_numberOfShoots++;
 		}
 
+		// Handle weapon changes
 		if ((_targetWeapon == null) || (TargetHandleWeaponAbility.CurrentWeapon != _targetWeapon))
 		{
 			OnEnterState();
 		}
+	}
+	
+
+	
+	/// <summary>
+	/// Calculates the damage per shot of the current weapon.
+	/// </summary>
+	protected virtual float CalculateWeaponDamage()
+	{
+		if (TargetHandleWeaponAbility?.CurrentWeapon == null)
+		{
+			return 10f; // Default fallback
+		}
+		
+		// Try to get damage from projectile's DamageOnTouch
+		var projectileWeapon = TargetHandleWeaponAbility.CurrentWeapon as ProjectileWeapon;
+		if (projectileWeapon != null && projectileWeapon.ObjectPooler != null)
+		{
+			// Get the projectile prefab from the object pooler
+			GameObject projectilePrefab = null;
+			
+			// Try as MMSimpleObjectPooler first
+			var simplePooler = projectileWeapon.ObjectPooler as MMSimpleObjectPooler;
+			if (simplePooler != null)
+			{
+				projectilePrefab = simplePooler.GameObjectToPool;
+			}
+			
+			// If we have the prefab, get the DamageOnTouch component
+			if (projectilePrefab != null)
+			{
+				var damageOnTouch = projectilePrefab.GetComponent<DamageOnTouch>();
+				if (damageOnTouch != null)
+				{
+					// Use MinDamageCaused (assumes consistent damage)
+					return damageOnTouch.MinDamageCaused;
+				}
+			}
+		}
+		
+		// Fallback to default
+		return 10f;
+	}
+	
+	/// <summary>
+	/// Clears the current target and releases tracking.
+	/// Forces AI to re-detect and find a new target.
+	/// </summary>
+	protected virtual void ClearCurrentTarget()
+	{
+		// Release tracking on current target via coordinator
+		if (_lastTarget != null && CombatCoordinator.HasInstance)
+		{
+			CombatCoordinator.Instance.ReleaseTarget(gameObject, _lastTarget);
+		}
+		
+		// Clear tracking
+		_lastTarget = null;
+		
+		// Clear brain's target (forces re-detection)
+		if (_brain != null)
+		{
+			_brain.Target = null;
+		}
+	}
+	
+	/// <summary>
+	/// Called by EnemyCombatTracker when current target dies.
+	/// Immediately clears target so hero can find a new one.
+	/// </summary>
+	public virtual void OnCurrentTargetDied()
+	{
+		ClearCurrentTarget();
+		_numberOfShoots = 0; // Reset so we can shoot at new target
 	}
 	
 	/// <summary>
@@ -262,17 +370,26 @@ namespace MoreMountains.TopDownEngine
 		{
 			Debug.LogWarning($"[AIActionShoot3D] OnEnterState called but CurrentWeapon is null on {gameObject.name}. Weapon may not be equipped yet.");
 		}
-	}		/// <summary>
-		/// When exiting the state we make sure we're not shooting anymore
-		/// </summary>
-		public override void OnExitState()
+	}		
+	
+	/// <summary>
+	/// When exiting the state we make sure we're not shooting anymore
+	/// </summary>
+	public override void OnExitState()
+	{
+		base.OnExitState();
+		if (TargetHandleWeaponAbility != null)
 		{
-			base.OnExitState();
-			if (TargetHandleWeaponAbility != null)
-			{
-				TargetHandleWeaponAbility.ForceStop();    
-			}
-			_shooting = false;
+			TargetHandleWeaponAbility.ForceStop();    
 		}
+		_shooting = false;
+		
+		// Release target tracking when exiting shooting state
+		if (EnableSmartFiring && _lastTarget != null && CombatCoordinator.HasInstance)
+		{
+			CombatCoordinator.Instance.ReleaseTarget(gameObject, _lastTarget);
+			_lastTarget = null;
+		}
+	}
 	}
 }

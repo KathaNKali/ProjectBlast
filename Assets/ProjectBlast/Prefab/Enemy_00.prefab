@@ -45207,6 +45207,7 @@ GameObject:
   - component: {fileID: 141769261663588876}
   - component: {fileID: 141769261663588979}
   - component: {fileID: 141769261663588978}
+  - component: {fileID: 3918141802387687600}
   m_Layer: 13
   m_Name: Enemy_00
   m_TagString: Enemy
@@ -45458,6 +45459,23 @@ MonoBehaviour:
   TargetDamageResistanceProcessor: {fileID: 0}
   TargetAnimator: {fileID: 0}
   DisableAnimatorLogs: 1
+--- !u!114 &3918141802387687600
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 141769261663588977}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b8e7d2f9c3a1e6f8d5a9b2c4e7f1a3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MoreMountains.TopDownEngine::EnemyCombatTracker
+  _totalReservedDamage: 0
+  _activeHeroCount: 0
+  _currentHP: 0
+  _effectiveHP: 0
+  _reservingHeroes: []
 --- !u!1 &141769261665784432
 GameObject:
   m_ObjectHideFlags: 0
@@ -56389,6 +56407,9 @@ MonoBehaviour:
   AimOrigin: 0
   ShootOffset: {x: 0, y: 1.8, z: 0}
   LockVerticalAim: 0
+  RequireAimLock: 1
+  AimAngleTolerance: 5
+  EnableSmartFiring: 1
 --- !u!114 &8592899605735082425
 MonoBehaviour:
   m_ObjectHideFlags: 0
