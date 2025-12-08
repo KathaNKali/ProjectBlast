@@ -212,6 +212,13 @@ namespace ProjectBlast.AI
             // Remove any null targets
             targets.RemoveAll(t => t == null);
             
+            // BLACKLIST: Remove already-claimed enemies (PHASE 1 only)
+            // In PHASE 2 (no unclaimed enemies), all enemies are available
+            if (CombatCoordinator.HasInstance)
+            {
+                targets.RemoveAll(t => !CombatCoordinator.Instance.IsEnemyAvailableForClaim(t.gameObject));
+            }
+            
             if (targets.Count == 0)
             {
                 return null;

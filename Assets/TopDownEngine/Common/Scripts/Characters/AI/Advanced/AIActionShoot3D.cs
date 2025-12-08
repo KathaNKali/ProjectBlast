@@ -45,7 +45,7 @@ namespace MoreMountains.TopDownEngine
 	
 	[Header("Smart Bullet Management")]
 	/// if true, coordinates with other heroes to avoid wasting bullets on already-doomed enemies
-	[Tooltip("if true, coordinates with other heroes to avoid wasting bullets on already-doomed enemies")]
+	[Tooltip("if true, uses cooperative allocation system to coordinate fire with other heroes")]
 	public bool EnableSmartFiring = true;
 	
 	protected CharacterOrientation3D _orientation3D;
@@ -57,9 +57,11 @@ namespace MoreMountains.TopDownEngine
 	protected bool _shooting = false;
 	protected Weapon _targetWeapon;
 	
-	// Smart bullet management
+	// Cooperative allocation system tracking
 	protected float _weaponDamagePerShot = 0f;
-	protected GameObject _lastTarget = null;		/// <summary>
+	protected GameObject _currentAllocatedTarget = null;  // Current target with bullet allocation
+	protected int _bulletsAllocated = 0;                   // How many bullets allocated to current target
+	protected bool _hasAllocation = false;                 // Whether we have active allocation		/// <summary>
 		/// On init we grab our CharacterHandleWeapon ability
 		/// </summary>
 		public override void Initialization()
@@ -83,6 +85,12 @@ namespace MoreMountains.TopDownEngine
 		if (TargetHandleWeaponAbility == null || TargetHandleWeaponAbility.CurrentWeapon == null)
 		{
 			return;
+		}
+		
+		// Check if we need to request allocation for new target
+		if (EnableSmartFiring && _brain.Target != null)
+		{
+			CheckAndRequestAllocation();
 		}
 		
 		MakeChangesToTheWeapon();
@@ -162,8 +170,132 @@ namespace MoreMountains.TopDownEngine
 				}                
 			}
 			
-			_shooting = true;
+		_shooting = true;
+	}
+
+	/// <summary>
+	/// Checks if we need to request allocation for new/changed target
+	/// </summary>
+	protected virtual void CheckAndRequestAllocation()
+	{
+		if (_brain.Target == null || !CombatCoordinator.HasInstance)
+		{
+			return;
 		}
+		
+		GameObject targetEnemy = _brain.Target.gameObject;
+		
+		// If target changed, release old allocation
+		if (_currentAllocatedTarget != null && _currentAllocatedTarget != targetEnemy)
+		{
+			ReleaseCurrentAllocation();
+		}
+		
+		// If we don't have allocation for current target, request it
+		if (!_hasAllocation || _currentAllocatedTarget != targetEnemy)
+		{
+			RequestAllocationForTarget(targetEnemy);
+		}
+	}
+	
+	/// <summary>
+	/// Requests bullet allocation from coordinator for target
+	/// </summary>
+	protected virtual void RequestAllocationForTarget(GameObject target)
+	{
+		if (target == null || !CombatCoordinator.HasInstance)
+		{
+			return;
+		}
+		
+		// Calculate weapon damage
+		_weaponDamagePerShot = CalculateWeaponDamage();
+		
+		// Get enemy's effective HP
+		float effectiveHP = CombatCoordinator.Instance.GetEnemyEffectiveHP(target);
+		
+		// Calculate bullets we need to contribute
+		int bulletsNeeded = Mathf.CeilToInt(effectiveHP / _weaponDamagePerShot);
+		
+		// Get hero's available ammo (check Hero component for ammo limit)
+		int maxBulletsAvailable = GetHeroAvailableAmmo();
+		
+		// Request allocation (min of what's needed vs what we have)
+		int bulletsToRequest = Mathf.Min(bulletsNeeded, maxBulletsAvailable);
+		
+		if (bulletsToRequest <= 0)
+		{
+			_hasAllocation = false;
+			return;
+		}
+		
+		var result = CombatCoordinator.Instance.RequestBulletAllocation(
+			gameObject,
+			target,
+			_weaponDamagePerShot,
+			bulletsToRequest
+		);
+		
+		if (result == AllocationResult.Success)
+		{
+			_currentAllocatedTarget = target;
+			_bulletsAllocated = bulletsToRequest;
+			_hasAllocation = true;
+		}
+		else if (result == AllocationResult.EnemyAlreadyClaimed)
+		{
+			// PHASE 1: Enemy already claimed by another hero, and unclaimed enemies exist
+			// Clear target and let AI find a different enemy
+			_hasAllocation = false;
+			ClearCurrentTarget();
+		}
+		else if (result == AllocationResult.EnemyFullyAllocated)
+		{
+			// Enemy already fully allocated by other heroes
+			// Clear target and let AI find a different enemy
+			_hasAllocation = false;
+			ClearCurrentTarget();
+		}
+		else
+		{
+			_hasAllocation = false;
+		}
+	}
+	
+	/// <summary>
+	/// Gets hero's available ammo count
+	/// </summary>
+	protected virtual int GetHeroAvailableAmmo()
+	{
+		// Try to get Hero component (ProjectBlast custom component) using reflection to avoid compile dependency
+		var heroComponent = GetComponentInParent(System.Type.GetType("ProjectBlast.Heroes.Hero, Assembly-CSharp"));
+		if (heroComponent != null)
+		{
+			// Use reflection to get UnlimitedAmmo and CurrentAmmo properties
+			var unlimitedAmmoProp = heroComponent.GetType().GetProperty("UnlimitedAmmo");
+			var currentAmmoProp = heroComponent.GetType().GetProperty("CurrentAmmo");
+			
+			if (unlimitedAmmoProp != null && currentAmmoProp != null)
+			{
+				bool unlimitedAmmo = (bool)unlimitedAmmoProp.GetValue(heroComponent);
+				if (unlimitedAmmo)
+				{
+					return 999; // Large number for unlimited
+				}
+				return (int)currentAmmoProp.GetValue(heroComponent);
+			}
+		}
+		
+		// Fallback: Check weapon's magazine ammo
+		if (TargetHandleWeaponAbility?.CurrentWeapon != null)
+		{
+			return TargetHandleWeaponAbility.CurrentWeapon.MagazineBased ? 
+				TargetHandleWeaponAbility.CurrentWeapon.CurrentAmmoLoaded :
+				999;
+		}
+		
+		return 999; // Default to high value if can't determine
+	}
 
 	/// <summary>
 	/// Activates the weapon
@@ -181,36 +313,19 @@ namespace MoreMountains.TopDownEngine
 			return;
 		}
 		
-		// Smart bullet management - request permission from coordinator
-		if (EnableSmartFiring)
+		// Check if we have permission to fire next bullet (cooperative allocation)
+		if (EnableSmartFiring && _brain.Target != null && CombatCoordinator.HasInstance)
 		{
-			// Update target tracking if changed
-			if (_brain.Target != null && _lastTarget != _brain.Target.gameObject)
+			if (!_hasAllocation || !CombatCoordinator.Instance.CanHeroFireNextBullet(gameObject, _brain.Target.gameObject))
 			{
-				// Release old target
-				if (_lastTarget != null && CombatCoordinator.HasInstance)
-				{
-					CombatCoordinator.Instance.ReleaseTarget(gameObject, _lastTarget);
-				}
+				// No more bullets allocated or allocation complete
+				TargetHandleWeaponAbility.ShootStop();
+				_numberOfShoots = 0;
 				
-				// Calculate weapon damage for new target
-				_weaponDamagePerShot = CalculateWeaponDamage();
-				_lastTarget = _brain.Target.gameObject;
-			}
-			
-			// ATOMIC: Request shot permission (check + track in one operation)
-			if (_brain.Target != null && CombatCoordinator.HasInstance)
-			{
-				if (!CombatCoordinator.Instance.RequestShot(gameObject, _brain.Target.gameObject, _weaponDamagePerShot))
-				{
-					// Permission denied - other heroes have already "doomed" this target
-					// KEEP TARGET LOCK - just stop firing and wait for enemy to die
-					// When enemy dies, OnCurrentTargetDied() will be called automatically
-					TargetHandleWeaponAbility.ShootStop();
-					_numberOfShoots = 0;
-					return; // Don't fire, but maintain target lock
-				}
-				// Permission granted - bullet is now tracked, proceed to fire
+				// Release allocation and find new target
+				ReleaseCurrentAllocation();
+				ClearCurrentTarget();
+				return;
 			}
 		}
 		
@@ -220,6 +335,12 @@ namespace MoreMountains.TopDownEngine
 			_targetWeapon = TargetHandleWeaponAbility.CurrentWeapon;
 			TargetHandleWeaponAbility.ShootStart();
 			_numberOfShoots++;
+			
+			// Notify coordinator that we fired a bullet
+			if (EnableSmartFiring && _brain.Target != null && CombatCoordinator.HasInstance)
+			{
+				CombatCoordinator.Instance.OnHeroFiredBullet(gameObject, _brain.Target.gameObject);
+			}
 		}
 
 		// Handle weapon changes
@@ -228,8 +349,6 @@ namespace MoreMountains.TopDownEngine
 			OnEnterState();
 		}
 	}
-	
-
 	
 	/// <summary>
 	/// Calculates the damage per shot of the current weapon.
@@ -272,19 +391,28 @@ namespace MoreMountains.TopDownEngine
 	}
 	
 	/// <summary>
-	/// Clears the current target and releases tracking.
+	/// Releases current allocation
+	/// </summary>
+	protected virtual void ReleaseCurrentAllocation()
+	{
+		if (_currentAllocatedTarget != null && CombatCoordinator.HasInstance)
+		{
+			CombatCoordinator.Instance.ReleaseHeroAllocation(gameObject, _currentAllocatedTarget);
+		}
+		
+		_currentAllocatedTarget = null;
+		_bulletsAllocated = 0;
+		_hasAllocation = false;
+	}
+	
+	/// <summary>
+	/// Clears the current target and releases allocation.
 	/// Forces AI to re-detect and find a new target.
 	/// </summary>
 	protected virtual void ClearCurrentTarget()
 	{
-		// Release tracking on current target via coordinator
-		if (_lastTarget != null && CombatCoordinator.HasInstance)
-		{
-			CombatCoordinator.Instance.ReleaseTarget(gameObject, _lastTarget);
-		}
-		
-		// Clear tracking
-		_lastTarget = null;
+		// Release allocation
+		ReleaseCurrentAllocation();
 		
 		// Clear brain's target (forces re-detection)
 		if (_brain != null)
@@ -384,11 +512,10 @@ namespace MoreMountains.TopDownEngine
 		}
 		_shooting = false;
 		
-		// Release target tracking when exiting shooting state
-		if (EnableSmartFiring && _lastTarget != null && CombatCoordinator.HasInstance)
+		// Release allocation when exiting shooting state
+		if (EnableSmartFiring)
 		{
-			CombatCoordinator.Instance.ReleaseTarget(gameObject, _lastTarget);
-			_lastTarget = null;
+			ReleaseCurrentAllocation();
 		}
 	}
 	}
