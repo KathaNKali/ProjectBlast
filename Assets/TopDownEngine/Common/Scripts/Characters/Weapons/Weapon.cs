@@ -742,6 +742,9 @@ namespace MoreMountains.TopDownEngine
 					{
 						WeaponState.ChangeState(WeaponStates.WeaponUse);
 						CurrentAmmoLoaded -= AmmoConsumedPerShot;
+						
+						// Notify CombatCoordinator for centralized ammo tracking
+						NotifyCombatCoordinatorBulletFired();
 					}
 					else
 					{
@@ -763,6 +766,8 @@ namespace MoreMountains.TopDownEngine
 					if (WeaponAmmo.EnoughAmmoToFire())
 					{
 						WeaponState.ChangeState(WeaponStates.WeaponUse);
+						// Note: Ammo consumption handled by WeaponAmmo.OnMMEvent()
+						// CombatCoordinator notification also happens there
 					}
 					else
 					{
@@ -772,11 +777,40 @@ namespace MoreMountains.TopDownEngine
 				else
 				{
 					WeaponState.ChangeState(WeaponStates.WeaponUse);
+					// Notify CombatCoordinator for non-magazine weapons
+					NotifyCombatCoordinatorBulletFired();
 				}
 			}
 		}
-
-		/// <summary>
+		
+	/// <summary>
+	/// Notifies CombatCoordinator that this weapon fired a bullet for centralized ammo tracking.
+	/// Works for AI, player, and scripted weapons.
+	/// </summary>
+	protected virtual void NotifyCombatCoordinatorBulletFired()
+	{
+		if (Owner == null) return;
+		
+		// Check if CombatCoordinator exists
+		if (!CombatCoordinator.HasInstance) return;
+		
+		// Get target from Character's AIBrain (for AI-controlled weapons)
+		GameObject target = null;
+		var character = Owner.GetComponent<Character>();
+		if (character != null)
+		{
+			var aiBrain = character.GetComponentInChildren<MoreMountains.Tools.AIBrain>();
+			if (aiBrain != null && aiBrain.Target != null)
+			{
+				target = aiBrain.Target.gameObject;
+			}
+		}
+		
+		if (target != null)
+		{
+			CombatCoordinator.Instance.OnHeroFiredBullet(Owner.gameObject, target);
+		}
+	}		/// <summary>
 		/// When the weapon is used, plays the corresponding sound
 		/// </summary>
 		public virtual void WeaponUse()

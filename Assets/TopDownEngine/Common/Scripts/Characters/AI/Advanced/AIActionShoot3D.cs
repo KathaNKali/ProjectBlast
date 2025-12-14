@@ -230,7 +230,7 @@ namespace MoreMountains.TopDownEngine
 		}
 		
 		var result = CombatCoordinator.Instance.RequestBulletAllocation(
-			gameObject,
+			_character.gameObject,
 			target,
 			_weaponDamagePerShot,
 			bulletsToRequest
@@ -316,7 +316,7 @@ namespace MoreMountains.TopDownEngine
 		// Check if we have permission to fire next bullet (cooperative allocation)
 		if (EnableSmartFiring && _brain.Target != null && CombatCoordinator.HasInstance)
 		{
-			if (!_hasAllocation || !CombatCoordinator.Instance.CanHeroFireNextBullet(gameObject, _brain.Target.gameObject))
+			if (!_hasAllocation || !CombatCoordinator.Instance.CanHeroFireNextBullet(_character.gameObject, _brain.Target.gameObject))
 			{
 				// No more bullets allocated or allocation complete
 				TargetHandleWeaponAbility.ShootStop();
@@ -335,13 +335,10 @@ namespace MoreMountains.TopDownEngine
 			_targetWeapon = TargetHandleWeaponAbility.CurrentWeapon;
 			TargetHandleWeaponAbility.ShootStart();
 			_numberOfShoots++;
-			
-			// Notify coordinator that we fired a bullet
-			if (EnableSmartFiring && _brain.Target != null && CombatCoordinator.HasInstance)
-			{
-				CombatCoordinator.Instance.OnHeroFiredBullet(gameObject, _brain.Target.gameObject);
-			}
 		}
+		
+		// NOTE: Ammo consumption handled by Weapon.ShootRequest() (Option B implementation)
+		// No need to call OnHeroFiredBullet() here - would cause double consumption
 
 		// Handle weapon changes
 		if ((_targetWeapon == null) || (TargetHandleWeaponAbility.CurrentWeapon != _targetWeapon))
@@ -357,7 +354,7 @@ namespace MoreMountains.TopDownEngine
 	{
 		if (TargetHandleWeaponAbility?.CurrentWeapon == null)
 		{
-			return 10f; // Default fallback
+			return 10f ; // Default fallback
 		}
 		
 		// Try to get damage from projectile's DamageOnTouch
@@ -397,7 +394,7 @@ namespace MoreMountains.TopDownEngine
 	{
 		if (_currentAllocatedTarget != null && CombatCoordinator.HasInstance)
 		{
-			CombatCoordinator.Instance.ReleaseHeroAllocation(gameObject, _currentAllocatedTarget);
+			CombatCoordinator.Instance.ReleaseHeroAllocation(_character.gameObject, _currentAllocatedTarget);
 		}
 		
 		_currentAllocatedTarget = null;

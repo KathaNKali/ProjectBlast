@@ -20,7 +20,7 @@ MonoBehaviour:
   StartingHealth: 100
   UnlimitedAmmo: 0
   StartingAmmo: 10
-  LowAmmoThreshold: 10
+  LowAmmoThreshold: 2
   DetectionRange: 5
   TargetSearchInterval: 0.25
   FireRate: 0.1

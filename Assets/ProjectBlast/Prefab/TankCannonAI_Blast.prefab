@@ -57,8 +57,8 @@ MonoBehaviour:
   UseBurstMode: 0
   BurstLength: 3
   BurstTimeBetweenShots: 0.1
-  MagazineBased: 0
-  MagazineSize: 30
+  MagazineBased: 1
+  MagazineSize: 10
   AutoReload: 0
   NoInputReload: 0
   ReloadTime: 2

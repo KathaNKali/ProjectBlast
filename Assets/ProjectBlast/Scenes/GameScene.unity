@@ -157,7 +157,7 @@ MonoBehaviour:
   MinDistanceBetweenEnemies: 2
   MinHealth: 50
   MaxHealth: 150
-  InitialDelay: 0
+  InitialDelay: 5
   SpawnInterval: 3
   ShowSpawnArea: 1
   DebugMode: 0
@@ -171,7 +171,7 @@ Transform:
   m_GameObject: {fileID: 849266}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.43, y: 0, z: 19}
+  m_LocalPosition: {x: 0.43, y: 0, z: 21.37}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -319,9 +319,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: MoreMountains.TopDownEngine::MoreMountains.TopDownEngine.CombatCoordinator
   MinEffectiveHPThreshold: 1
+  EnableDebugLogs: 1
   _trackedEnemyCount: 0
   _totalHeroesEngaged: 0
-  _totalInFlightDamage: 0
+  _totalAllocatedDamage: 0
+  _totalBulletsAllocated: 0
+  _totalBulletsFired: 0
+  _totalHeroesRegistered: 0
+  _totalAmmoRemaining: 0
 --- !u!1 &876183361
 GameObject:
   m_ObjectHideFlags: 0
@@ -474,7 +479,7 @@ MonoBehaviour:
     NearClipPlane: 0.3
     FarClipPlane: 100
     Dutch: 0
-    ModeOverride: 2
+    ModeOverride: 1
     PhysicalProperties:
       GateFit: 2
       SensorSize: {x: 21.946, y: 16.002}
@@ -496,8 +501,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1295315588}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.5733278, y: -0.000000005069603, z: 0.0000000035474883, w: 0.8193261}
-  m_LocalPosition: {x: 0, y: 25, z: -5}
+  m_LocalRotation: {x: 0.6187093, y: 0.000000028605292, z: -0.000000022527894, w: 0.78562}
+  m_LocalPosition: {x: 0, y: 25, z: 1.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -580,7 +585,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 788ac7428e2fd486b8401795ac6b475b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectBlast.Camera.BattlefieldCameraTarget
-  TargetPosition: {x: 0, y: 0, z: 0}
+  TargetPosition: {x: 0, y: 0, z: 6.5}
   ShowGizmo: 0
   GizmoSize: 0.53
   GizmoColor: {r: 1, g: 0, b: 0.34963036, a: 1}
@@ -593,7 +598,7 @@ Transform:
   m_GameObject: {fileID: 1700173028}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 6.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -685,8 +690,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1845332064}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.5733278, y: -0.0000000050695936, z: 0.000000003547475, w: 0.8193261}
-  m_LocalPosition: {x: 0, y: 25, z: -5}
+  m_LocalRotation: {x: 0.6187094, y: 0.000000028605289, z: -0.000000022527887, w: 0.78562}
+  m_LocalPosition: {x: 0, y: 25, z: 1.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -900,13 +905,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectBlast.Grid.GridManager
   PassiveRows: 1
-  PassiveColumns: 3
+  PassiveColumns: 1
   PassiveGridCenter: {x: 0, y: 0, z: -3.37}
   ActiveRows: 1
-  ActiveColumns: 3
+  ActiveColumns: 1
   ActiveGridCenter: {x: 0, y: 0, z: 0}
   FiringRows: 1
-  FiringColumns: 3
+  FiringColumns: 2
   FiringGridCenter: {x: 0, y: 0, z: 3.23}
   CellSize: 2.41
   CellSpacing: 0.681

@@ -128,10 +128,25 @@ namespace ProjectBlast.Heroes
         public bool IsAlive => !_isDead && Health != null && Health.CurrentHealth > 0;
         public bool IsOutOfAmmo => !UnlimitedAmmo && _isOutOfAmmo;
         public bool IsFunctional => IsAlive && !IsOutOfAmmo;
-        public int CurrentAmmo => UnlimitedAmmo ? -1 : _currentAmmo;
+        
+        // Ammo properties now query CombatCoordinator (centralized tracking)
+        public int CurrentAmmo
+        {
+            get
+            {
+                if (UnlimitedAmmo) return -1;
+                if (CombatCoordinator.HasInstance)
+                {
+                    int ammo = CombatCoordinator.Instance.GetHeroAmmo(gameObject);
+                    return ammo >= 0 ? ammo : _currentAmmo; // Fallback to local if not registered
+                }
+                return _currentAmmo; // Fallback if coordinator not available
+            }
+        }
+        
         public int MaxAmmo => UnlimitedAmmo ? -1 : StartingAmmo;
-        public float AmmoPercentage => UnlimitedAmmo ? 1f : (float)_currentAmmo / StartingAmmo;
-        public bool IsAmmoLow => !UnlimitedAmmo && _currentAmmo <= LowAmmoThreshold && _currentAmmo > 0;
+        public float AmmoPercentage => UnlimitedAmmo ? 1f : (float)CurrentAmmo / StartingAmmo;
+        public bool IsAmmoLow => !UnlimitedAmmo && CurrentAmmo <= LowAmmoThreshold && CurrentAmmo > 0;
         public Transform CurrentTarget => AIBrain != null ? AIBrain.Target : null;
         public bool IsFiring => AIBrain != null && AIBrain.BrainActive && CurrentTarget != null;
         public Weapon CurrentWeapon => _currentWeapon;
@@ -206,6 +221,17 @@ namespace ProjectBlast.Heroes
             
             InitializeWeaponSystem();
             InitializeAmmo();
+            
+            // Register with CombatCoordinator for ammo tracking (Option B: skip unlimited ammo)
+            if (!UnlimitedAmmo && CombatCoordinator.HasInstance)
+            {
+                CombatCoordinator.Instance.RegisterHero(gameObject, StartingAmmo);
+                Debug.Log($"[Hero] {HeroName} registered with CombatCoordinator. Ammo: {StartingAmmo}");
+            }
+            else if (UnlimitedAmmo)
+            {
+                Debug.Log($"[Hero] {HeroName} has unlimited ammo - skipping CombatCoordinator registration");
+            }
         }
         
         void OnDestroy()
@@ -214,6 +240,12 @@ namespace ProjectBlast.Heroes
             {
                 Health.OnDeath -= OnHeroDeath;
                 Health.OnRevive -= OnHeroRevive;
+            }
+            
+            // Unregister from CombatCoordinator
+            if (CombatCoordinator.HasInstance)
+            {
+                CombatCoordinator.Instance.UnregisterHero(gameObject);
             }
         }
         
@@ -582,11 +614,11 @@ namespace ProjectBlast.Heroes
         
         #endregion
         
-        #region Update (Ammo Tracking)
+        #region Update (Display & Safety Checks)
         
         void Update()
         {
-            _displayCurrentAmmo = _currentAmmo;
+            _displayCurrentAmmo = CurrentAmmo; // Now queries CombatCoordinator
             _displayCurrentTarget = CurrentTarget;
             _displayCurrentSlot = _currentGridSlot != null ? _currentGridSlot.GetCoordinateLabel() : "None";
             _displayCurrentZone = _currentGridSlot != null ? _currentGridSlot.Zone.ToString() : "None";
@@ -598,27 +630,8 @@ namespace ProjectBlast.Heroes
                 StopFiring();
             }
             
-            // Track weapon firing for ammo consumption
-            // Only consume ammo when weapon transitions from NOT firing to firing
-            if (!UnlimitedAmmo && _currentWeapon != null && AIBrain != null && AIBrain.BrainActive)
-            {
-                Weapon.WeaponStates currentState = _currentWeapon.WeaponState.CurrentState;
-                
-                // Weapon just started firing (state transition to WeaponUse)
-                if (currentState == Weapon.WeaponStates.WeaponUse && 
-                    _lastWeaponState != Weapon.WeaponStates.WeaponUse &&
-                    Time.time - _lastAmmoCheckTime > 0.1f) // Prevent double-consumption
-                {
-                    if (!ConsumeAmmo())
-                    {
-                        Debug.LogWarning($"[Hero] {HeroName} ran out of ammo!");
-                        StopFiring();
-                    }
-                    _lastAmmoCheckTime = Time.time;
-                }
-                
-                _lastWeaponState = currentState;
-            }
+            // NOTE: Ammo consumption now handled by CombatCoordinator.OnHeroFiredBullet()
+            // No need to track weapon state transitions here
         }
         
         #endregion

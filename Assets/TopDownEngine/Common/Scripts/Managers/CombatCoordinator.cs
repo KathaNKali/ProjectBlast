@@ -99,6 +99,13 @@ namespace MoreMountains.TopDownEngine
         // Core data structure: Enemy GameObject -> Target Data
         private Dictionary<GameObject, EnemyTargetData> _targets = new Dictionary<GameObject, EnemyTargetData>();
         
+        // Hero ammo tracking: Hero GameObject -> Current Ammo Count
+        private Dictionary<GameObject, int> _heroAmmo = new Dictionary<GameObject, int>();
+        
+        [Header("Hero Ammo Tracking")]
+        [SerializeField] private int _totalHeroesRegistered;
+        [SerializeField] private int _totalAmmoRemaining;
+        
         protected override void Awake()
         {
             base.Awake();
@@ -155,6 +162,96 @@ namespace MoreMountains.TopDownEngine
             
             return false; // All enemies are claimed
         }
+        
+        #region Hero Ammo Management
+        
+        /// <summary>
+        /// Registers a hero with the combat coordinator for ammo tracking.
+        /// Only call this for heroes with LIMITED ammo (skip unlimited ammo heroes).
+        /// </summary>
+        /// <param name="hero">Hero GameObject to register</param>
+        /// <param name="startingAmmo">Starting ammo count</param>
+        public void RegisterHero(GameObject hero, int startingAmmo)
+        {
+            if (hero == null || startingAmmo <= 0)
+                return;
+            
+            if (_heroAmmo.ContainsKey(hero))
+            {
+                Debug.LogWarning($"[CombatCoordinator] Hero {hero.name} already registered! Updating ammo to {startingAmmo}");
+                _heroAmmo[hero] = startingAmmo;
+            }
+            else
+            {
+                _heroAmmo[hero] = startingAmmo;
+                
+                if (EnableDebugLogs)
+                {
+                    Debug.Log($"[CombatCoordinator] Registered hero {hero.name} with {startingAmmo} ammo");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Unregisters a hero from ammo tracking (call on hero death/removal)
+        /// </summary>
+        /// <param name="hero">Hero GameObject to unregister</param>
+        public void UnregisterHero(GameObject hero)
+        {
+            if (hero == null)
+                return;
+            
+            if (_heroAmmo.ContainsKey(hero))
+            {
+                _heroAmmo.Remove(hero);
+                
+                if (EnableDebugLogs)
+                {
+                    Debug.Log($"[CombatCoordinator] Unregistered hero {hero.name}");
+                }
+            }
+            
+            // Also release any allocations this hero has
+            foreach (var targetData in _targets.Values)
+            {
+                if (targetData.Allocations.ContainsKey(hero))
+                {
+                    targetData.Allocations.Remove(hero);
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Gets the current ammo count for a hero
+        /// </summary>
+        /// <param name="hero">Hero GameObject</param>
+        /// <returns>Current ammo, or -1 if not registered (unlimited ammo)</returns>
+        public int GetHeroAmmo(GameObject hero)
+        {
+            if (hero == null)
+                return -1;
+            
+            return _heroAmmo.ContainsKey(hero) ? _heroAmmo[hero] : -1;
+        }
+        
+        /// <summary>
+        /// Checks if hero has ammo remaining
+        /// </summary>
+        /// <param name="hero">Hero GameObject</param>
+        /// <returns>True if hero has ammo or is unlimited, false if depleted</returns>
+        public bool HasAmmo(GameObject hero)
+        {
+            if (hero == null)
+                return false;
+            
+            // Not registered = unlimited ammo
+            if (!_heroAmmo.ContainsKey(hero))
+                return true;
+            
+            return _heroAmmo[hero] > 0;
+        }
+        
+        #endregion
         
         /// <summary>
         /// Checks if an enemy is available for a hero to claim.
@@ -343,7 +440,7 @@ namespace MoreMountains.TopDownEngine
         
         /// <summary>
         /// Notify that hero fired a bullet. Call this AFTER firing.
-        /// Increments the fired bullet counter.
+        /// Increments the fired bullet counter and consumes ammo for limited-ammo heroes.
         /// </summary>
         public void OnHeroFiredBullet(GameObject hero, GameObject enemy)
         {
@@ -362,9 +459,67 @@ namespace MoreMountains.TopDownEngine
             var allocation = targetData.Allocations[hero];
             allocation.BulletsFired++;
             
-            if (EnableDebugLogs)
+            // AMMO CONSUMPTION: Decrement hero's ammo (only for registered heroes with limited ammo)
+            if (_heroAmmo.ContainsKey(hero))
             {
-                Debug.Log($"[CombatCoordinator] {hero.name} fired bullet {allocation.BulletsFired}/{allocation.BulletsAllocated} at {enemy.name}");
+                _heroAmmo[hero]--;
+                int remainingAmmo = _heroAmmo[hero];
+                
+                if (EnableDebugLogs)
+                {
+                    Debug.Log($"[CombatCoordinator] {hero.name} fired bullet {allocation.BulletsFired}/{allocation.BulletsAllocated} at {enemy.name}. Ammo: {remainingAmmo}");
+                }
+                
+                // Check for ammo depletion
+                if (remainingAmmo <= 0)
+                {
+                    // Notify hero component using reflection to avoid compile dependency
+                    var heroComponent = hero.GetComponent(System.Type.GetType("ProjectBlast.Heroes.Hero, Assembly-CSharp"));
+                    if (heroComponent != null)
+                    {
+                        var onAmmoDepletionMethod = heroComponent.GetType().GetMethod("OnAmmoDepletion", 
+                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                        
+                        if (onAmmoDepletionMethod != null)
+                        {
+                            onAmmoDepletionMethod.Invoke(heroComponent, null);
+                            
+                            if (EnableDebugLogs)
+                            {
+                                Debug.Log($"[CombatCoordinator] {hero.name} OUT OF AMMO! Triggered OnAmmoDepletion()");
+                            }
+                        }
+                    }
+                }
+                // Check for low ammo warning
+                else
+                {
+                    // Get LowAmmoThreshold from hero using reflection
+                    var heroComponent = hero.GetComponent(System.Type.GetType("ProjectBlast.Heroes.Hero, Assembly-CSharp"));
+                    if (heroComponent != null)
+                    {
+                        var lowAmmoThresholdProp = heroComponent.GetType().GetProperty("LowAmmoThreshold");
+                        if (lowAmmoThresholdProp != null)
+                        {
+                            int lowAmmoThreshold = (int)lowAmmoThresholdProp.GetValue(heroComponent);
+                            
+                            if (remainingAmmo == lowAmmoThreshold)
+                            {
+                                var onAmmoLowMethod = heroComponent.GetType().GetMethod("OnAmmoLow",
+                                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                                
+                                if (onAmmoLowMethod != null)
+                                {
+                                    onAmmoLowMethod.Invoke(heroComponent, null);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else if (EnableDebugLogs)
+            {
+                Debug.Log($"[CombatCoordinator] {hero.name} fired bullet {allocation.BulletsFired}/{allocation.BulletsAllocated} at {enemy.name} (unlimited ammo)");
             }
         }
         
@@ -618,6 +773,15 @@ namespace MoreMountains.TopDownEngine
                     _totalBulletsFired += allocation.BulletsFired;
                 }
             }
+            
+            // Update hero ammo tracking debug info
+            _totalHeroesRegistered = _heroAmmo.Count;
+            _totalAmmoRemaining = 0;
+            
+            foreach (var ammo in _heroAmmo.Values)
+            {
+                _totalAmmoRemaining += ammo;
+            }
         }
         
         #endregion
@@ -631,10 +795,11 @@ namespace MoreMountains.TopDownEngine
         {
             if (EnableDebugLogs)
             {
-                Debug.Log("[CombatCoordinator] Clearing all allocations");
+                Debug.Log("[CombatCoordinator] Clearing all allocations and hero ammo tracking");
             }
             
             _targets.Clear();
+            _heroAmmo.Clear();
         }
         
         void OnDestroy()
