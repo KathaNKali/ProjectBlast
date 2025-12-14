@@ -61,7 +61,16 @@ namespace MoreMountains.TopDownEngine
 	protected float _weaponDamagePerShot = 0f;
 	protected GameObject _currentAllocatedTarget = null;  // Current target with bullet allocation
 	protected int _bulletsAllocated = 0;                   // How many bullets allocated to current target
-	protected bool _hasAllocation = false;                 // Whether we have active allocation		/// <summary>
+	protected bool _hasAllocation = false;                 // Whether we have active allocation
+	
+	// Cached weapon damage (calculate once on weapon change, not every allocation)
+	private float _cachedWeaponDamage = 10f;
+	private Weapon _cachedDamageWeapon = null;
+	
+	// Cached reflection components for performance (avoids repeated Type.GetType() and GetProperty() calls)
+	private Component _cachedHeroComponent;
+	private System.Reflection.PropertyInfo _cachedUnlimitedAmmoProp;
+	private System.Reflection.PropertyInfo _cachedCurrentAmmoProp;		/// <summary>
 		/// On init we grab our CharacterHandleWeapon ability
 		/// </summary>
 		public override void Initialization()
@@ -73,6 +82,19 @@ namespace MoreMountains.TopDownEngine
 			if (TargetHandleWeaponAbility == null)
 			{
 				TargetHandleWeaponAbility = _character?.FindAbility<CharacterHandleWeapon>();
+			}
+			
+			// Cache Hero component and properties ONCE (TDE performance pattern)
+			// This eliminates 100-1000x slower reflection calls every frame
+			var heroType = System.Type.GetType("ProjectBlast.Heroes.Hero, Assembly-CSharp");
+			if (heroType != null)
+			{
+				_cachedHeroComponent = GetComponentInParent(heroType);
+				if (_cachedHeroComponent != null)
+				{
+					_cachedUnlimitedAmmoProp = heroType.GetProperty("UnlimitedAmmo");
+					_cachedCurrentAmmoProp = heroType.GetProperty("CurrentAmmo");
+				}
 			}
 		}
 
@@ -208,8 +230,8 @@ namespace MoreMountains.TopDownEngine
 			return;
 		}
 		
-		// Calculate weapon damage
-		_weaponDamagePerShot = CalculateWeaponDamage();
+		// Get cached weapon damage (only recalculates if weapon changed)
+		_weaponDamagePerShot = GetWeaponDamage();
 		
 		// Get enemy's effective HP
 		float effectiveHP = CombatCoordinator.Instance.GetEnemyEffectiveHP(target);
@@ -267,26 +289,27 @@ namespace MoreMountains.TopDownEngine
 	/// </summary>
 	protected virtual int GetHeroAvailableAmmo()
 	{
-		// Try to get Hero component (ProjectBlast custom component) using reflection to avoid compile dependency
-		var heroComponent = GetComponentInParent(System.Type.GetType("ProjectBlast.Heroes.Hero, Assembly-CSharp"));
-		if (heroComponent != null)
+		// Use cached reflection components (100-1000x faster than repeated Type.GetType() calls)
+		if (_cachedHeroComponent != null && 
+		    _cachedUnlimitedAmmoProp != null && 
+		    _cachedCurrentAmmoProp != null)
 		{
-			// Use reflection to get UnlimitedAmmo and CurrentAmmo properties
-			var unlimitedAmmoProp = heroComponent.GetType().GetProperty("UnlimitedAmmo");
-			var currentAmmoProp = heroComponent.GetType().GetProperty("CurrentAmmo");
-			
-			if (unlimitedAmmoProp != null && currentAmmoProp != null)
+			try
 			{
-				bool unlimitedAmmo = (bool)unlimitedAmmoProp.GetValue(heroComponent);
+				bool unlimitedAmmo = (bool)_cachedUnlimitedAmmoProp.GetValue(_cachedHeroComponent);
 				if (unlimitedAmmo)
 				{
 					return 999; // Large number for unlimited
 				}
-				return (int)currentAmmoProp.GetValue(heroComponent);
+				return (int)_cachedCurrentAmmoProp.GetValue(_cachedHeroComponent);
+			}
+			catch (System.Exception e)
+			{
+				Debug.LogWarning($"[AIActionShoot3D] Reflection error getting hero ammo: {e.Message}");
 			}
 		}
 		
-		// Fallback: Check weapon's magazine ammo
+		// Fallback: Check weapon's magazine ammo if Hero component not available
 		if (TargetHandleWeaponAbility?.CurrentWeapon != null)
 		{
 			return TargetHandleWeaponAbility.CurrentWeapon.MagazineBased ? 
@@ -348,42 +371,74 @@ namespace MoreMountains.TopDownEngine
 	}
 	
 	/// <summary>
+	/// Gets weapon damage, using cached value if weapon hasn't changed
+	/// </summary>
+	protected virtual float GetWeaponDamage()
+	{
+		// Return cached damage if weapon hasn't changed
+		if (TargetHandleWeaponAbility?.CurrentWeapon == _cachedDamageWeapon && _cachedWeaponDamage > 0)
+		{
+			return _cachedWeaponDamage;
+		}
+		
+		// Recalculate if weapon changed
+		_cachedDamageWeapon = TargetHandleWeaponAbility?.CurrentWeapon;
+		_cachedWeaponDamage = CalculateWeaponDamage();
+		return _cachedWeaponDamage;
+	}
+	
+	/// <summary>
 	/// Calculates the damage per shot of the current weapon.
+	/// PRIORITY: WeaponDataSO (ProjectBlast) > DamageOnTouch (TDE) > Fallback
 	/// </summary>
 	protected virtual float CalculateWeaponDamage()
 	{
-		if (TargetHandleWeaponAbility?.CurrentWeapon == null)
+		var weapon = TargetHandleWeaponAbility?.CurrentWeapon;
+		if (weapon == null)
 		{
-			return 10f ; // Default fallback
+			return 10f; // Fallback default
 		}
 		
-		// Try to get damage from projectile's DamageOnTouch
-		var projectileWeapon = TargetHandleWeaponAbility.CurrentWeapon as ProjectileWeapon;
-		if (projectileWeapon != null && projectileWeapon.ObjectPooler != null)
+		// PRIORITY 1: Use ProjectBlast WeaponDataSO system (most consistent and configurable)
+		// Use reflection to avoid compile-time dependency on ProjectBlast namespace
+		var weaponDataHolderType = System.Type.GetType("ProjectBlast.Data.WeaponDataHolder, Assembly-CSharp");
+		if (weaponDataHolderType != null)
 		{
-			// Get the projectile prefab from the object pooler
-			GameObject projectilePrefab = null;
-			
-			// Try as MMSimpleObjectPooler first
-			var simplePooler = projectileWeapon.ObjectPooler as MMSimpleObjectPooler;
-			if (simplePooler != null)
+			var weaponDataHolder = weapon.GetComponent(weaponDataHolderType);
+			if (weaponDataHolder != null)
 			{
-				projectilePrefab = simplePooler.GameObjectToPool;
+				var weaponDataProp = weaponDataHolderType.GetProperty("WeaponData");
+				if (weaponDataProp != null)
+				{
+					var weaponData = weaponDataProp.GetValue(weaponDataHolder);
+					if (weaponData != null)
+					{
+						var damagePerShotProp = weaponData.GetType().GetProperty("DamagePerShot");
+						if (damagePerShotProp != null)
+						{
+							return (float)damagePerShotProp.GetValue(weaponData);
+						}
+					}
+				}
 			}
-			
-			// If we have the prefab, get the DamageOnTouch component
-			if (projectilePrefab != null)
+		}
+		
+		// PRIORITY 2: Use TDE ProjectileWeapon's DamageOnTouch
+		var projectileWeapon = weapon as ProjectileWeapon;
+		if (projectileWeapon?.ObjectPooler != null)
+		{
+			var simplePooler = projectileWeapon.ObjectPooler as MMSimpleObjectPooler;
+			if (simplePooler?.GameObjectToPool != null)
 			{
-				var damageOnTouch = projectilePrefab.GetComponent<DamageOnTouch>();
+				var damageOnTouch = simplePooler.GameObjectToPool.GetComponent<DamageOnTouch>();
 				if (damageOnTouch != null)
 				{
-					// Use MinDamageCaused (assumes consistent damage)
 					return damageOnTouch.MinDamageCaused;
 				}
 			}
 		}
 		
-		// Fallback to default
+		// PRIORITY 3: Fallback
 		return 10f;
 	}
 	
@@ -490,6 +545,13 @@ namespace MoreMountains.TopDownEngine
 		{
 			_weaponAim = TargetHandleWeaponAbility.CurrentWeapon.gameObject.MMGetComponentNoAlloc<WeaponAim>();
 			_projectileWeapon = TargetHandleWeaponAbility.CurrentWeapon.gameObject.MMGetComponentNoAlloc<ProjectileWeapon>();
+			
+			// Cache weapon damage when weapon changes (TDE performance pattern)
+			if (TargetHandleWeaponAbility.CurrentWeapon != _cachedDamageWeapon)
+			{
+				_cachedDamageWeapon = TargetHandleWeaponAbility.CurrentWeapon;
+				_cachedWeaponDamage = CalculateWeaponDamage();
+			}
 		}
 		else
 		{

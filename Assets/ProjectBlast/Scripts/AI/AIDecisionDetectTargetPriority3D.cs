@@ -68,6 +68,11 @@ namespace ProjectBlast.AI
         [SerializeField] private string _currentTargetName;
         [SerializeField] private bool _isLockedOn;
         
+        // Health component cache (TDE performance pattern - frame-based caching)
+        // Cleared every frame to prevent stale data
+        private Dictionary<GameObject, Health> _healthCache = new Dictionary<GameObject, Health>();
+        private int _lastCacheFrame = -1;
+        
         /// <summary>
         /// On Init we grab our MMConeOfVision
         /// </summary>
@@ -109,6 +114,33 @@ namespace ProjectBlast.AI
         {
             base.OnExitState();
             _isLockedOn = false;
+        }
+        
+        /// <summary>
+        /// Gets cached Health component for target, avoiding repeated GetComponent calls.
+        /// Cache is cleared every frame to prevent stale references.
+        /// TDE Performance Pattern: Frame-based component caching.
+        /// </summary>
+        protected virtual Health GetCachedHealth(GameObject target)
+        {
+            if (target == null) return null;
+            
+            // Clear cache every frame (prevents stale data from destroyed objects)
+            if (_lastCacheFrame != Time.frameCount)
+            {
+                _healthCache.Clear();
+                _lastCacheFrame = Time.frameCount;
+            }
+            
+            // Check cache first
+            if (!_healthCache.TryGetValue(target, out Health health))
+            {
+                // Cache miss - get component and store
+                health = target.GetComponent<Health>();
+                _healthCache[target] = health;
+            }
+            
+            return health;
         }
         
         /// <summary>
@@ -302,7 +334,8 @@ namespace ProjectBlast.AI
             {
                 if (target == null) continue;
                 
-                Health health = target.GetComponent<Health>();
+                // Use cached Health lookup (TDE performance pattern)
+                Health health = GetCachedHealth(target.gameObject);
                 if (health != null)
                 {
                     if (health.CurrentHealth < lowestHealth)
@@ -337,7 +370,8 @@ namespace ProjectBlast.AI
             {
                 if (target == null) continue;
                 
-                Health health = target.GetComponent<Health>();
+                // Use cached Health lookup (TDE performance pattern)
+                Health health = GetCachedHealth(target.gameObject);
                 if (health != null)
                 {
                     if (health.CurrentHealth > highestHealth)

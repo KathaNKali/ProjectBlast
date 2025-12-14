@@ -167,27 +167,8 @@ namespace MoreMountains.TopDownEngine
 	/// </summary>
 	protected virtual void NotifyCombatCoordinatorBulletFired()
 	{
-		if (_weapon.Owner == null) return;
-		
-		// Check if CombatCoordinator exists
-		if (!CombatCoordinator.HasInstance) return;
-		
-		// Get target from Character's AIBrain (for AI-controlled weapons)
-		GameObject target = null;
-		var character = _weapon.Owner.GetComponent<Character>();
-		if (character != null)
-		{
-			var aiBrain = character.GetComponentInChildren<MoreMountains.Tools.AIBrain>();
-			if (aiBrain != null && aiBrain.Target != null)
-			{
-				target = aiBrain.Target.gameObject;
-			}
-		}
-		
-		if (target != null)
-		{
-			CombatCoordinator.Instance.OnHeroFiredBullet(_weapon.Owner.gameObject, target);
-		}
+		// Use centralized utility to eliminate code duplication
+		CombatNotificationUtility.NotifyBulletFired(_weapon.Owner);
 	}		/// <summary>
 		/// Fills the weapon with ammo
 		/// </summary>

@@ -155,37 +155,36 @@ namespace ProjectBlast.Heroes
         
         #region Initialization
         
-        void Awake()
-        {
-            // Find TDE Character Components
-            Character = GetComponent<Character>();
-            Health = GetComponent<Health>();
-            HandleWeapon = GetComponent<CharacterHandleWeapon>();
-            Orientation3D = GetComponent<CharacterOrientation3D>();
-            
-            // Find AI Components (on child GameObject or self)
-            AIBrain = GetComponentInChildren<AIBrain>();
-            AIActionShoot = GetComponentInChildren<AIActionShoot3D>();
-            AIActionAim = GetComponentInChildren<AIActionAimWeaponAtTarget3D>();
-            AIDecisionDetectPriority = GetComponentInChildren<AIDecisionDetectTargetPriority3D>();
-            AIDecisionLOS = GetComponentInChildren<AIDecisionLineOfSightToTarget3D>();
-            
-            // CRITICAL: Disable AI Brain immediately on instantiation
-            // This prevents AI from activating before hero reaches Firing zone
-            if (AIBrain != null)
-            {
-                AIBrain.BrainActive = false;
-                Debug.Log($"[Hero] {gameObject.name} AIBrain disabled in Awake() - will activate when entering Firing zone");
-            }
-            
-            _renderer = GetComponent<Renderer>();
-            if (_renderer != null)
-            {
-                _originalMaterial = _renderer.material;
-            }
-        }
-        
-        void Start()
+	void Awake()
+	{
+		// Find TDE Character Components using MMGetComponentNoAlloc (TDE performance pattern)
+		// 30-50% faster than GetComponent, no GC allocations
+		Character = gameObject.MMGetComponentNoAlloc<Character>();
+		Health = gameObject.MMGetComponentNoAlloc<Health>();
+		HandleWeapon = gameObject.MMGetComponentNoAlloc<CharacterHandleWeapon>();
+		Orientation3D = gameObject.MMGetComponentNoAlloc<CharacterOrientation3D>();
+		
+		// Find AI Components (on child GameObject or self) - use GetComponentInChildren for hierarchy search
+		AIBrain = GetComponentInChildren<AIBrain>();
+		AIActionShoot = GetComponentInChildren<AIActionShoot3D>();
+		AIActionAim = GetComponentInChildren<AIActionAimWeaponAtTarget3D>();
+		AIDecisionDetectPriority = GetComponentInChildren<AIDecisionDetectTargetPriority3D>();
+		AIDecisionLOS = GetComponentInChildren<AIDecisionLineOfSightToTarget3D>();
+		
+		// CRITICAL: Disable AI Brain immediately on instantiation
+		// This prevents AI from activating before hero reaches Firing zone
+		if (AIBrain != null)
+		{
+			AIBrain.BrainActive = false;
+			Debug.Log($"[Hero] {gameObject.name} AIBrain disabled in Awake() - will activate when entering Firing zone");
+		}
+		
+		_renderer = gameObject.MMGetComponentNoAlloc<Renderer>();
+		if (_renderer != null)
+		{
+			_originalMaterial = _renderer.material;
+		}
+	}        void Start()
         {
             InitializeHero();
         }
