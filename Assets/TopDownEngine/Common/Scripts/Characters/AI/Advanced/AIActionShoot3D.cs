@@ -7,11 +7,17 @@ namespace MoreMountains.TopDownEngine
 {
 	/// <summary>
 	/// An Action that shoots using the currently equipped weapon. If your weapon is in auto mode, will shoot until you exit the state, and will only shoot once in SemiAuto mode. You can optionnally have the character face (left/right) the target, and aim at it (if the weapon has a WeaponAim component).
+	/// 
+	/// EVENT-DRIVEN ARCHITECTURE (TDE Pattern):
+	/// - Implements MMEventListener<CombatAllocationEvent> for decoupled communication
+	/// - Triggers allocation request events instead of direct CombatCoordinator calls
+	/// - Listens for Grant/Deny responses to control firing behavior
+	/// - Follows TDE's event-driven pattern for AI actions
 	/// </summary>
 	[AddComponentMenu("TopDown Engine/Character/AI/Actions/AI Action Shoot 3D")]
 	//[RequireComponent(typeof(CharacterOrientation3D))]
 	//[RequireComponent(typeof(CharacterHandleWeapon))]
-	public class AIActionShoot3D : AIAction
+	public class AIActionShoot3D : AIAction, MMEventListener<CombatAllocationEvent>
 	{
 		public enum AimOrigins { Transform, SpawnPosition }
         
@@ -62,6 +68,7 @@ namespace MoreMountains.TopDownEngine
 	protected GameObject _currentAllocatedTarget = null;  // Current target with bullet allocation
 	protected int _bulletsAllocated = 0;                   // How many bullets allocated to current target
 	protected bool _hasAllocation = false;                 // Whether we have active allocation
+	protected bool _pendingAllocationRequest = false;      // Event-driven: waiting for Grant/Deny response
 	
 	// Cached weapon damage (calculate once on weapon change, not every allocation)
 	private float _cachedWeaponDamage = 10f;
@@ -83,6 +90,9 @@ namespace MoreMountains.TopDownEngine
 			{
 				TargetHandleWeaponAbility = _character?.FindAbility<CharacterHandleWeapon>();
 			}
+			
+			// Start listening for allocation events (TDE event-driven pattern)
+			this.MMEventStartListening<CombatAllocationEvent>();
 			
 			// Cache Hero component and properties ONCE (TDE performance pattern)
 			// This eliminates 100-1000x slower reflection calls every frame
@@ -221,11 +231,11 @@ namespace MoreMountains.TopDownEngine
 	}
 	
 	/// <summary>
-	/// Requests bullet allocation from coordinator for target
+	/// Requests bullet allocation from coordinator for target (EVENT-DRIVEN)
 	/// </summary>
 	protected virtual void RequestAllocationForTarget(GameObject target)
 	{
-		if (target == null || !CombatCoordinator.HasInstance)
+		if (target == null || _character == null)
 		{
 			return;
 		}
@@ -233,8 +243,9 @@ namespace MoreMountains.TopDownEngine
 		// Get cached weapon damage (only recalculates if weapon changed)
 		_weaponDamagePerShot = GetWeaponDamage();
 		
-		// Get enemy's effective HP
-		float effectiveHP = CombatCoordinator.Instance.GetEnemyEffectiveHP(target);
+		// Get enemy's effective HP (still use direct call for readonly queries)
+		float effectiveHP = CombatCoordinator.HasInstance ? 
+			CombatCoordinator.Instance.GetEnemyEffectiveHP(target) : target.GetComponent<Health>()?.CurrentHealth ?? 0f;
 		
 		// Calculate bullets we need to contribute
 		int bulletsNeeded = Mathf.CeilToInt(effectiveHP / _weaponDamagePerShot);
@@ -251,37 +262,25 @@ namespace MoreMountains.TopDownEngine
 			return;
 		}
 		
-		var result = CombatCoordinator.Instance.RequestBulletAllocation(
+		// Get component references for event
+		var health = target.GetComponent<Health>();
+		if (health == null)
+		{
+			_hasAllocation = false;
+			return;
+		}
+		
+		// EVENT-DRIVEN: Trigger allocation request event (TDE pattern)
+		// Response will come via OnMMEvent → HandleAllocationGranted/Denied
+		_pendingAllocationRequest = true;
+		CombatAllocationEvent.TriggerRequest(
+			_character,
+			health,
 			_character.gameObject,
 			target,
-			_weaponDamagePerShot,
-			bulletsToRequest
+			bulletsToRequest,
+			_weaponDamagePerShot
 		);
-		
-		if (result == AllocationResult.Success)
-		{
-			_currentAllocatedTarget = target;
-			_bulletsAllocated = bulletsToRequest;
-			_hasAllocation = true;
-		}
-		else if (result == AllocationResult.EnemyAlreadyClaimed)
-		{
-			// PHASE 1: Enemy already claimed by another hero, and unclaimed enemies exist
-			// Clear target and let AI find a different enemy
-			_hasAllocation = false;
-			ClearCurrentTarget();
-		}
-		else if (result == AllocationResult.EnemyFullyAllocated)
-		{
-			// Enemy already fully allocated by other heroes
-			// Clear target and let AI find a different enemy
-			_hasAllocation = false;
-			ClearCurrentTarget();
-		}
-		else
-		{
-			_hasAllocation = false;
-		}
 	}
 	
 	/// <summary>
@@ -337,9 +336,26 @@ namespace MoreMountains.TopDownEngine
 		}
 		
 		// Check if we have permission to fire next bullet (cooperative allocation)
-		if (EnableSmartFiring && _brain.Target != null && CombatCoordinator.HasInstance)
+		if (EnableSmartFiring && _brain.Target != null)
 		{
-			if (!_hasAllocation || !CombatCoordinator.Instance.CanHeroFireNextBullet(_character.gameObject, _brain.Target.gameObject))
+			// EVENT-DRIVEN: Wait for allocation grant before shooting
+			if (_pendingAllocationRequest)
+			{
+				// Still waiting for Grant/Deny response, don't shoot yet
+				return;
+			}
+			
+			if (!_hasAllocation)
+			{
+				// No allocation, stop shooting
+				TargetHandleWeaponAbility.ShootStop();
+				_numberOfShoots = 0;
+				return;
+			}
+			
+			// Check with coordinator if we can fire next bullet (uses direct call for fast queries)
+			if (CombatCoordinator.HasInstance && 
+			    !CombatCoordinator.Instance.CanHeroFireNextBullet(_character.gameObject, _brain.Target.gameObject))
 			{
 				// No more bullets allocated or allocation complete
 				TargetHandleWeaponAbility.ShootStop();
@@ -443,18 +459,29 @@ namespace MoreMountains.TopDownEngine
 	}
 	
 	/// <summary>
-	/// Releases current allocation
+	/// Releases current allocation (EVENT-DRIVEN)
 	/// </summary>
 	protected virtual void ReleaseCurrentAllocation()
 	{
-		if (_currentAllocatedTarget != null && CombatCoordinator.HasInstance)
+		if (_currentAllocatedTarget != null && _character != null)
 		{
-			CombatCoordinator.Instance.ReleaseHeroAllocation(_character.gameObject, _currentAllocatedTarget);
+			var health = _currentAllocatedTarget.GetComponent<Health>();
+			if (health != null)
+			{
+				// EVENT-DRIVEN: Trigger release event (TDE pattern)
+				CombatAllocationEvent.TriggerRelease(
+					_character,
+					health,
+					_character.gameObject,
+					_currentAllocatedTarget
+				);
+			}
 		}
 		
 		_currentAllocatedTarget = null;
 		_bulletsAllocated = 0;
 		_hasAllocation = false;
+		_pendingAllocationRequest = false;
 	}
 	
 	/// <summary>
@@ -577,5 +604,68 @@ namespace MoreMountains.TopDownEngine
 			ReleaseCurrentAllocation();
 		}
 	}
+	
+	/// <summary>
+	/// Stop listening to events on destroy (TDE pattern)
+	/// </summary>
+	protected virtual void OnDestroy()
+	{
+		this.MMEventStopListening<CombatAllocationEvent>();
+	}
+	
+	#region Event Handlers (TDE Pattern)
+	
+	/// <summary>
+	/// TDE event handler - processes allocation responses
+	/// </summary>
+	public virtual void OnMMEvent(CombatAllocationEvent allocationEvent)
+	{
+		// Only respond to events involving this character
+		if (allocationEvent.Hero != _character)
+		{
+			return;
+		}
+		
+		switch (allocationEvent.Type)
+		{
+			case CombatAllocationEvent.EventType.Grant:
+				HandleAllocationGranted(allocationEvent);
+				break;
+				
+			case CombatAllocationEvent.EventType.Deny:
+				HandleAllocationDenied(allocationEvent);
+				break;
+		}
+	}
+	
+	/// <summary>
+	/// Handles allocation grant response
+	/// </summary>
+	protected virtual void HandleAllocationGranted(CombatAllocationEvent evt)
+	{
+		_currentAllocatedTarget = evt.EnemyObject;
+		_bulletsAllocated = evt.BulletsGranted;
+		_hasAllocation = true;
+		_pendingAllocationRequest = false;
+	}
+	
+	/// <summary>
+	/// Handles allocation deny response
+	/// </summary>
+	protected virtual void HandleAllocationDenied(CombatAllocationEvent evt)
+	{
+		_hasAllocation = false;
+		_pendingAllocationRequest = false;
+		
+		// Handle different denial reasons
+		if (evt.Result == AllocationResult.EnemyAlreadyClaimed || 
+		    evt.Result == AllocationResult.EnemyFullyAllocated)
+		{
+			// Clear target and let AI find a different enemy
+			ClearCurrentTarget();
+		}
+	}
+	
+	#endregion
 	}
 }

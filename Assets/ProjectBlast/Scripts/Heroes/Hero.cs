@@ -25,7 +25,7 @@ namespace ProjectBlast.Heroes
     /// - AI states configured in Unity Inspector for per-hero customization
     /// </summary>
     [RequireComponent(typeof(Collider))]
-    public class Hero : MonoBehaviour
+    public class Hero : MonoBehaviour, MMEventListener<MMAmmoEvent>
     {
         #region Inspector Fields
         
@@ -45,6 +45,7 @@ namespace ProjectBlast.Heroes
         public Health Health;
         public CharacterHandleWeapon HandleWeapon;
         public CharacterOrientation3D Orientation3D;
+        public HeroAmmo HeroAmmoAbility;
         
         [Header("AI Components (Auto-found)")]
         public AIBrain AIBrain;
@@ -129,18 +130,13 @@ namespace ProjectBlast.Heroes
         public bool IsOutOfAmmo => !UnlimitedAmmo && _isOutOfAmmo;
         public bool IsFunctional => IsAlive && !IsOutOfAmmo;
         
-        // Ammo properties now query CombatCoordinator (centralized tracking)
+        // Ammo properties - now use cached value updated via events (event-driven pattern)
         public int CurrentAmmo
         {
             get
             {
                 if (UnlimitedAmmo) return -1;
-                if (CombatCoordinator.HasInstance)
-                {
-                    int ammo = CombatCoordinator.Instance.GetHeroAmmo(gameObject);
-                    return ammo >= 0 ? ammo : _currentAmmo; // Fallback to local if not registered
-                }
-                return _currentAmmo; // Fallback if coordinator not available
+                return _currentAmmo; // Return cached value from MMAmmoEvent
             }
         }
         
@@ -163,6 +159,7 @@ namespace ProjectBlast.Heroes
 		Health = gameObject.MMGetComponentNoAlloc<Health>();
 		HandleWeapon = gameObject.MMGetComponentNoAlloc<CharacterHandleWeapon>();
 		Orientation3D = gameObject.MMGetComponentNoAlloc<CharacterOrientation3D>();
+		HeroAmmoAbility = gameObject.MMGetComponentNoAlloc<HeroAmmo>();
 		
 		// Find AI Components (on child GameObject or self) - use GetComponentInChildren for hierarchy search
 		AIBrain = GetComponentInChildren<AIBrain>();
@@ -245,6 +242,35 @@ namespace ProjectBlast.Heroes
             if (CombatCoordinator.HasInstance)
             {
                 CombatCoordinator.Instance.UnregisterHero(gameObject);
+            }
+        }
+        
+        void OnEnable()
+        {
+            this.MMEventStartListening<MMAmmoEvent>();
+        }
+        
+        void OnDisable()
+        {
+            this.MMEventStopListening<MMAmmoEvent>();
+        }
+        
+        /// <summary>
+        /// Handles ammo change events (TDE event-driven pattern)
+        /// </summary>
+        public void OnMMEvent(MMAmmoEvent ammoEvent)
+        {
+            // Only process events for this hero
+            if (ammoEvent.Hero == gameObject)
+            {
+                _currentAmmo = ammoEvent.CurrentAmmo;
+                _displayCurrentAmmo = _currentAmmo; // Update Inspector display
+                
+                // Check for low ammo warning
+                if (IsAmmoLow && !_isOutOfAmmo)
+                {
+                    // Could trigger UI warning, sound, etc.
+                }
             }
         }
         
@@ -529,6 +555,14 @@ namespace ProjectBlast.Heroes
         
         protected virtual void InitializeAmmo()
         {
+            // Initialize HeroAmmo ability (TDE pattern)
+            if (HeroAmmoAbility != null)
+            {
+                HeroAmmoAbility.InitializeAmmo(StartingAmmo, UnlimitedAmmo);
+                HeroAmmoAbility.LowAmmoThreshold = LowAmmoThreshold;
+                Debug.Log($"[Hero] {HeroName} initialized HeroAmmo ability. Ammo: {StartingAmmo}, Unlimited: {UnlimitedAmmo}");
+            }
+            
             if (UnlimitedAmmo)
             {
                 _currentAmmo = -1;
@@ -598,7 +632,7 @@ namespace ProjectBlast.Heroes
             }
         }
         
-        protected virtual void OnAmmoDepletion()
+        public virtual void OnAmmoDepletion()
         {
             _isOutOfAmmo = true;
             StopFiring();
