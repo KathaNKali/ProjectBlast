@@ -49,10 +49,25 @@ namespace MoreMountains.TopDownEngine
 	[Range(0f, 45f)]
 	public float AimAngleTolerance = 5f;
 	
+	[Header("Line of Sight")]
+	/// if true, checks line-of-sight and switches target if blocked by obstacle/enemy
+	[Tooltip("if true, automatically switches to new target when line-of-sight is blocked")]
+	public bool AutoSwitchOnLOSBlocked = true;
+	/// the layermask to consider as obstacles when checking line of sight
+	[Tooltip("the layermask to consider as obstacles when checking line of sight")]
+	public LayerMask ObstacleLayerMask = LayerManager.ObstaclesLayerMask;
+	/// offset from collider center for LOS raycast
+	[Tooltip("offset from collider center for LOS raycast")]
+	public Vector3 LineOfSightOffset = Vector3.zero;
+	
 	[Header("Smart Bullet Management")]
 	/// if true, coordinates with other heroes to avoid wasting bullets on already-doomed enemies
 	[Tooltip("if true, uses cooperative allocation system to coordinate fire with other heroes")]
 	public bool EnableSmartFiring = true;
+	/// minimum bullets required for allocation (if less, hero fires quickly and finds new target)
+	[Tooltip("minimum bullets required for sustained engagement (lower allocations fire immediately and switch)")]
+	[Range(1, 10)]
+	public int MinimumBulletThreshold = 3;
 	
 	protected CharacterOrientation3D _orientation3D;
 	protected Character _character;
@@ -62,6 +77,7 @@ namespace MoreMountains.TopDownEngine
 	protected int _numberOfShoots = 0;
 	protected bool _shooting = false;
 	protected Weapon _targetWeapon;
+	protected Collider _collider;  // For LOS checks
 	
 	// Cooperative allocation system tracking
 	protected float _weaponDamagePerShot = 0f;
@@ -69,6 +85,7 @@ namespace MoreMountains.TopDownEngine
 	protected int _bulletsAllocated = 0;                   // How many bullets allocated to current target
 	protected bool _hasAllocation = false;                 // Whether we have active allocation
 	protected bool _pendingAllocationRequest = false;      // Event-driven: waiting for Grant/Deny response
+	protected bool _isLowAllocation = false;               // True if bullets < MinimumBulletThreshold (fire quickly and switch)
 	
 	// Cached weapon damage (calculate once on weapon change, not every allocation)
 	private float _cachedWeaponDamage = 10f;
@@ -86,6 +103,8 @@ namespace MoreMountains.TopDownEngine
 			base.Initialization();
 			_character = GetComponentInParent<Character>();
 			_orientation3D = _character?.FindAbility<CharacterOrientation3D>();
+			_collider = _character?.gameObject.GetComponent<Collider>();
+			
 			if (TargetHandleWeaponAbility == null)
 			{
 				TargetHandleWeaponAbility = _character?.FindAbility<CharacterHandleWeapon>();
@@ -117,6 +136,14 @@ namespace MoreMountains.TopDownEngine
 		if (TargetHandleWeaponAbility == null || TargetHandleWeaponAbility.CurrentWeapon == null)
 		{
 			return;
+		}
+		
+		// LINE-OF-SIGHT CHECK: If target blocked, switch to new target
+		if (AutoSwitchOnLOSBlocked && _brain.Target != null && !CheckLineOfSight())
+		{
+			Debug.LogWarning($"[AIActionShoot3D] {_character.name} LOS blocked to {_brain.Target.name}! Switching target...");
+			ClearCurrentTarget(); // Releases allocation and clears target
+			return; // Skip this frame, AI will re-detect new target
 		}
 		
 		// Check if we need to request allocation for new target
@@ -348,12 +375,18 @@ namespace MoreMountains.TopDownEngine
 				return;
 			}
 			
-			if (!_hasAllocation)
+			if (!_hasAllocation || _bulletsAllocated == 0)
 			{
-				// No allocation, stop shooting
-				Debug.LogWarning($"[AIActionShoot3D] {_character.name} has no allocation, cannot shoot");
+				// No allocation or 0 bullets, stop shooting
+				Debug.LogWarning($"[AIActionShoot3D] {_character.name} has no valid allocation (bullets: {_bulletsAllocated}), cannot shoot");
 				TargetHandleWeaponAbility.ShootStop();
 				_numberOfShoots = 0;
+				
+				// If somehow we have allocation but 0 bullets, clean up
+				if (_hasAllocation && _bulletsAllocated == 0)
+				{
+					ClearCurrentTarget();
+				}
 				return;
 			}
 			
@@ -365,7 +398,19 @@ namespace MoreMountains.TopDownEngine
 				TargetHandleWeaponAbility.ShootStop();
 				_numberOfShoots = 0;
 				
-				// Release allocation and find new target
+				// SOLUTION 3: Quick Switch for Low Allocations
+				// If this was a low allocation (< threshold), immediately find new target
+				// Don't wait - hero should be reassigned ASAP
+				if (_isLowAllocation)
+				{
+					Debug.LogWarning($"[AIActionShoot3D] {_character.name} completed LOW allocation - immediately switching to new target");
+					ReleaseCurrentAllocation();
+					ClearCurrentTarget();
+					_isLowAllocation = false; // Reset flag
+					return;
+				}
+				
+				// Normal allocation complete - release and find new target
 				ReleaseCurrentAllocation();
 				ClearCurrentTarget();
 				return;
@@ -486,6 +531,7 @@ namespace MoreMountains.TopDownEngine
 		_bulletsAllocated = 0;
 		_hasAllocation = false;
 		_pendingAllocationRequest = false;
+		_isLowAllocation = false; // Reset low allocation flag
 	}
 	
 	/// <summary>
@@ -502,6 +548,52 @@ namespace MoreMountains.TopDownEngine
 		{
 			_brain.Target = null;
 		}
+		
+		// Reset low allocation flag
+		_isLowAllocation = false;
+	}
+	
+	/// <summary>
+	/// Checks line-of-sight to current target.
+	/// Returns false if obstacle or enemy blocks the path.
+	/// </summary>
+	protected virtual bool CheckLineOfSight()
+	{
+		if (_brain.Target == null || _collider == null)
+		{
+			return false;
+		}
+		
+		Vector3 raycastOrigin = _collider.bounds.center + LineOfSightOffset / 2;
+		Vector3 directionToTarget = _brain.Target.position - raycastOrigin;
+		float distanceToTarget = directionToTarget.magnitude;
+		
+		// Raycast to target
+		RaycastHit hit = MMDebug.Raycast3D(
+			raycastOrigin, 
+			directionToTarget.normalized, 
+			distanceToTarget, 
+			ObstacleLayerMask, 
+			Color.yellow, 
+			true
+		);
+		
+		// If raycast hit something, line-of-sight is blocked
+		if (hit.collider != null)
+		{
+			// Check if the hit object is the target itself (LOS clear)
+			if (hit.collider.gameObject == _brain.Target.gameObject || 
+			    hit.collider.transform.IsChildOf(_brain.Target))
+			{
+				return true; // Hit the target, LOS is clear
+			}
+			
+			// Hit an obstacle or different enemy - LOS blocked
+			return false;
+		}
+		
+		// No hit, LOS is clear
+		return true;
 	}
 	
 	/// <summary>
@@ -648,10 +740,34 @@ namespace MoreMountains.TopDownEngine
 	protected virtual void HandleAllocationGranted(CombatAllocationEvent evt)
 	{
 		Debug.LogWarning($"[AIActionShoot3D] {_character.name} GRANTED {evt.BulletsGranted} bullets for {evt.EnemyObject.name}");
+		
+		// SOLUTION 2: Zero Bullet Detection
+		// If granted 0 bullets, hero can't contribute meaningfully
+		// Immediately release and find a better target
+		if (evt.BulletsGranted == 0)
+		{
+			Debug.LogWarning($"[AIActionShoot3D] {_character.name} granted 0 bullets - releasing allocation and finding new target");
+			_hasAllocation = false;
+			_pendingAllocationRequest = false;
+			ClearCurrentTarget(); // Releases allocation and clears target for re-detection
+			return;
+		}
+		
+		// Valid allocation with bullets > 0
 		_currentAllocatedTarget = evt.EnemyObject;
 		_bulletsAllocated = evt.BulletsGranted;
 		_hasAllocation = true;
 		_pendingAllocationRequest = false;
+		
+		// SOLUTION 3: Low Allocation Detection
+		// If allocation is below minimum threshold, mark for quick firing
+		// Hero will fire allocated bullets immediately and then find new target
+		_isLowAllocation = (evt.BulletsGranted < MinimumBulletThreshold);
+		
+		if (_isLowAllocation)
+		{
+			Debug.LogWarning($"[AIActionShoot3D] {_character.name} LOW allocation ({evt.BulletsGranted} < {MinimumBulletThreshold}) - will fire quickly and switch target");
+		}
 	}
 	
 	/// <summary>

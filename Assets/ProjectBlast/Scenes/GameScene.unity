@@ -918,7 +918,7 @@ MonoBehaviour:
   FiringColumns: 2
   FiringGridCenter: {x: 0, y: 0, z: 3.23}
   CellSize: 2.41
-  CellSpacing: 0.681
+  CellSpacing: 0.599
   ShowGridGizmos: 1
   ShowSlotLabels: 0
   PassiveColor: {r: 0, g: 1, b: 0, a: 1}
