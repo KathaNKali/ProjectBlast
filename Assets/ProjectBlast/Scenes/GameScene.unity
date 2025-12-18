@@ -320,6 +320,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: MoreMountains.TopDownEngine::MoreMountains.TopDownEngine.CombatCoordinator
   MinEffectiveHPThreshold: 1
   EnableDebugLogs: 1
+  Heroes:
+  - {fileID: 141769261663588977, guid: eee0b484700f549fe8c8485180a2514c, type: 3}
+  Enemies: []
+  AutoRegisterEnemiesOnSpawn: 1
   _trackedEnemyCount: 0
   _totalHeroesEngaged: 0
   _totalAllocatedDamage: 0

@@ -5311,7 +5311,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &6834845520680822688
 Transform:
   m_ObjectHideFlags: 0
@@ -5456,7 +5456,7 @@ MonoBehaviour:
         Active: 1
         UniqueID: -2126316553
         Label: Sound
-        OriginalLabel: 
+        OriginalLabel: Sound
         ChannelMode: 0
         Channel: 0
         MMChannelDefinition: {fileID: 0}
@@ -5581,7 +5581,7 @@ MonoBehaviour:
         Active: 1
         UniqueID: -915181703
         Label: Particles Instantiation
-        OriginalLabel: 
+        OriginalLabel: Particles Instantiation
         ChannelMode: 0
         Channel: 0
         MMChannelDefinition: {fileID: 0}
@@ -5680,7 +5680,7 @@ MonoBehaviour:
         Active: 1
         UniqueID: -172220515
         Label: Lens Distortion
-        OriginalLabel: 
+        OriginalLabel: Lens Distortion
         ChannelMode: 0
         Channel: 0
         MMChannelDefinition: {fileID: 0}
@@ -5857,7 +5857,7 @@ MonoBehaviour:
         Active: 1
         UniqueID: 1993109283
         Label: Cinemachine Impulse
-        OriginalLabel: 
+        OriginalLabel: Cinemachine Impulse
         ChannelMode: 0
         Channel: 0
         MMChannelDefinition: {fileID: 0}
@@ -5975,7 +5975,7 @@ MonoBehaviour:
         Active: 1
         UniqueID: 2110982802
         Label: Chromatic Aberration
-        OriginalLabel: 
+        OriginalLabel: Chromatic Aberration
         ChannelMode: 0
         Channel: 0
         MMChannelDefinition: {fileID: 0}
@@ -6089,7 +6089,7 @@ MonoBehaviour:
         Active: 1
         UniqueID: -1333181894
         Label: Bloom
-        OriginalLabel: 
+        OriginalLabel: Bloom
         ChannelMode: 0
         Channel: 0
         MMChannelDefinition: {fileID: 0}

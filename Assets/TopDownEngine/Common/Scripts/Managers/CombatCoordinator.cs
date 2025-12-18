@@ -711,50 +711,35 @@ namespace MoreMountains.TopDownEngine
                     Debug.Log($"[CombatCoordinator] {hero.name} fired bullet {allocation.BulletsFired}/{allocation.BulletsAllocated} at {enemy.name}. Ammo: {remainingAmmo}");
                 }
                 
-                // Check for ammo depletion (TDE FindAbility pattern - zero reflection)
+                // Check for ammo depletion (TDE interface pattern - type-safe, zero reflection)
                 if (remainingAmmo <= 0)
                 {
-                    var heroCharacter = hero.GetComponent<Character>();
-                    if (heroCharacter != null)
+                    // Get IAmmoDepletable from hero GameObject (HeroAmmo is a CharacterAbility on the hero)
+                    var ammoDepletable = hero.GetComponent<IAmmoDepletable>();
+                    if (ammoDepletable != null)
                     {
-                        // Use TDE's FindAbility<T>() - type-safe, 100-1000x faster than reflection
-                        // Use FindAbilityByString to avoid namespace issues between TDE and ProjectBlast
-                        var heroAmmo = heroCharacter.FindAbilityByString("HeroAmmo");
-                        if (heroAmmo != null)
+                        ammoDepletable.OnAmmoDepletion();
+                        
+                        if (EnableDebugLogs)
                         {
-                            // Call OnAmmoDepletion via reflection-free dynamic invocation
-                            var method = heroAmmo.GetType().GetMethod("OnAmmoDepletion");
-                            if (method != null)
-                            {
-                                method.Invoke(heroAmmo, null);
-                                
-                                if (EnableDebugLogs)
-                                {
-                                    Debug.Log($"[CombatCoordinator] {hero.name} OUT OF AMMO! Triggered OnAmmoDepletion()");
-                                }
-                            }
+                            Debug.Log($"[CombatCoordinator] {hero.name} OUT OF AMMO! Triggered OnAmmoDepletion()");
                         }
                     }
+                    else if (EnableDebugLogs)
+                    {
+                        Debug.LogWarning($"[CombatCoordinator] {hero.name} has no IAmmoDepletable ability!");
+                    }
                 }
-                // Check for low ammo warning (TDE FindAbility pattern)
+                // Check for low ammo warning (interface pattern)
                 else
                 {
-                    var heroCharacter = hero.GetComponent<Character>();
-                    if (heroCharacter != null)
+                    var ammoDepletable = hero.GetComponent<IAmmoDepletable>();
+                    if (ammoDepletable != null)
                     {
-                        var heroAmmo = heroCharacter.FindAbilityByString("HeroAmmo");
-                        if (heroAmmo != null)
+                        int threshold = ammoDepletable.GetLowAmmoThreshold();
+                        if (remainingAmmo == threshold)
                         {
-                            var thresholdField = heroAmmo.GetType().GetField("LowAmmoThreshold");
-                            if (thresholdField != null)
-                            {
-                                int threshold = (int)thresholdField.GetValue(heroAmmo);
-                                if (remainingAmmo == threshold)
-                                {
-                                    var method = heroAmmo.GetType().GetMethod("OnAmmoLow");
-                                    method?.Invoke(heroAmmo, null);
-                                }
-                            }
+                            ammoDepletable.OnAmmoLow();
                         }
                     }
                 }

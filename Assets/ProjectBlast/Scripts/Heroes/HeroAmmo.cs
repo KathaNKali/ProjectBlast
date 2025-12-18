@@ -8,10 +8,10 @@ namespace ProjectBlast.Heroes
     /// CharacterAbility for managing hero ammo state.
     /// Follows TDE pattern: abilities are discovered via Character.FindAbility<T>()
     /// 
-    /// This replaces reflection-based callbacks in CombatCoordinator.
+    /// Implements IAmmoDepletable for type-safe callbacks (no reflection needed).
     /// </summary>
     [AddComponentMenu("TopDown Engine/Character/Abilities/Hero Ammo")]
-    public class HeroAmmo : CharacterAbility
+    public class HeroAmmo : CharacterAbility, IAmmoDepletable
     {
         [Header("Ammo Configuration")]
         [Tooltip("Low ammo threshold for warnings")]
@@ -116,6 +116,14 @@ namespace ProjectBlast.Heroes
         public virtual int GetCurrentAmmo()
         {
             return UnlimitedAmmo ? int.MaxValue : CurrentAmmo;
+        }
+        
+        /// <summary>
+        /// Gets the low ammo threshold (IAmmoDepletable interface)
+        /// </summary>
+        public virtual int GetLowAmmoThreshold()
+        {
+            return LowAmmoThreshold;
         }
     }
 }
