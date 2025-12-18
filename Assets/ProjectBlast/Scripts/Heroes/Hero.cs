@@ -161,6 +161,13 @@ namespace ProjectBlast.Heroes
 		Orientation3D = gameObject.MMGetComponentNoAlloc<CharacterOrientation3D>();
 		HeroAmmoAbility = gameObject.MMGetComponentNoAlloc<HeroAmmo>();
 		
+		// CRITICAL FIX: Add HeroAmmo component if missing
+		if (HeroAmmoAbility == null)
+		{
+			Debug.LogWarning($"[Hero] {gameObject.name} missing HeroAmmo component - adding automatically");
+			HeroAmmoAbility = gameObject.AddComponent<HeroAmmo>();
+		}
+		
 		// Find AI Components (on child GameObject or self) - use GetComponentInChildren for hierarchy search
 		AIBrain = GetComponentInChildren<AIBrain>();
 		AIActionShoot = GetComponentInChildren<AIActionShoot3D>();

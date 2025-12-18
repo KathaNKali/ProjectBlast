@@ -714,20 +714,22 @@ namespace MoreMountains.TopDownEngine
                 // Check for ammo depletion (TDE interface pattern - type-safe, zero reflection)
                 if (remainingAmmo <= 0)
                 {
+                    Debug.LogWarning($"[CombatCoordinator] {hero.name} AMMO DEPLETED! Remaining: {remainingAmmo}");
+                    
                     // Get IAmmoDepletable from hero GameObject (HeroAmmo is a CharacterAbility on the hero)
                     var ammoDepletable = hero.GetComponent<IAmmoDepletable>();
+                    
+                    Debug.LogWarning($"[CombatCoordinator] IAmmoDepletable component found: {ammoDepletable != null}");
+                    
                     if (ammoDepletable != null)
                     {
+                        Debug.LogWarning($"[CombatCoordinator] Calling OnAmmoDepletion() on {hero.name}...");
                         ammoDepletable.OnAmmoDepletion();
-                        
-                        if (EnableDebugLogs)
-                        {
-                            Debug.Log($"[CombatCoordinator] {hero.name} OUT OF AMMO! Triggered OnAmmoDepletion()");
-                        }
+                        Debug.LogWarning($"[CombatCoordinator] OnAmmoDepletion() called successfully!");
                     }
-                    else if (EnableDebugLogs)
+                    else
                     {
-                        Debug.LogWarning($"[CombatCoordinator] {hero.name} has no IAmmoDepletable ability!");
+                        Debug.LogError($"[CombatCoordinator] {hero.name} has no IAmmoDepletable ability! Components: {string.Join(", ", hero.GetComponents<Component>().Select(c => c.GetType().Name))}");
                     }
                 }
                 // Check for low ammo warning (interface pattern)
