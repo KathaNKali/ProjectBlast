@@ -454,11 +454,12 @@ namespace MoreMountains.TopDownEngine
         /// <summary>
         /// Checks if an enemy is available for a hero to claim.
         /// Used by AI target selection to skip already-claimed enemies.
-        /// PHASE 1: Only unclaimed enemies are available
-        /// PHASE 2: All enemies are available (cooperative finish)
+        /// 
+        /// COOPERATIVE ALLOCATION: Multiple heroes CAN target the same enemy.
+        /// Only filters out DEAD or FULLY ALLOCATED enemies.
         /// </summary>
         /// <param name="enemy">Enemy GameObject to check</param>
-        /// <returns>True if enemy can be claimed, false if already claimed by another hero</returns>
+        /// <returns>True if enemy can be claimed, false if dead or fully allocated</returns>
         public bool IsEnemyAvailableForClaim(GameObject enemy)
         {
             if (enemy == null)
@@ -468,12 +469,7 @@ namespace MoreMountains.TopDownEngine
             if (health == null)
                 return false;
             
-            // PHASE 2: If no unclaimed enemies exist, all enemies are available for cooperative finish
-            if (!HasUnclaimedEnemies())
-                return true;
-            
-            // PHASE 1: Only unclaimed enemies are available
-            // If enemy not tracked yet, it's unclaimed
+            // If enemy not tracked yet, it's available
             if (!_targets.ContainsKey(health))
                 return true;
             
@@ -483,8 +479,10 @@ namespace MoreMountains.TopDownEngine
             if (targetData.Health == null || targetData.Health.CurrentHealth <= 0)
                 return false;
             
-            // Check if enemy has no allocations (unclaimed)
-            return targetData.Allocations.Count == 0;
+            // COOPERATIVE: Enemy is available if it has positive effective HP
+            // This allows multiple heroes to allocate to the same enemy
+            float effectiveHP = targetData.GetEffectiveHP();
+            return effectiveHP > 0;
         }
         
         #region Public API - New Cooperative Allocation System
@@ -877,6 +875,24 @@ namespace MoreMountains.TopDownEngine
             }
             
             return _targets[health].GetTotalAllocatedDamage();
+        }
+        
+        /// <summary>
+        /// Gets number of heroes that have allocated bullets to this enemy.
+        /// Used by target selection to prefer unclaimed enemies.
+        /// </summary>
+        public int GetEnemyAllocatedHeroCount(GameObject enemy)
+        {
+            if (enemy == null)
+                return 0;
+            
+            var health = enemy.GetComponent<Health>();
+            if (health == null || !_targets.ContainsKey(health))
+            {
+                return 0;
+            }
+            
+            return _targets[health].GetTotalHeroesAllocated();
         }
         
         /// <summary>

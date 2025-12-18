@@ -220,12 +220,14 @@ namespace MoreMountains.TopDownEngine
 		// If target changed, release old allocation
 		if (_currentAllocatedTarget != null && _currentAllocatedTarget != targetEnemy)
 		{
+			Debug.LogWarning($"[AIActionShoot3D] {_character.name} target changed, releasing old allocation");
 			ReleaseCurrentAllocation();
 		}
 		
 		// If we don't have allocation for current target, request it
 		if (!_hasAllocation || _currentAllocatedTarget != targetEnemy)
 		{
+			Debug.LogWarning($"[AIActionShoot3D] {_character.name} requesting allocation for {targetEnemy.name}. HasAllocation: {_hasAllocation}, Pending: {_pendingAllocationRequest}");
 			RequestAllocationForTarget(targetEnemy);
 		}
 	}
@@ -342,12 +344,14 @@ namespace MoreMountains.TopDownEngine
 			if (_pendingAllocationRequest)
 			{
 				// Still waiting for Grant/Deny response, don't shoot yet
+				Debug.LogWarning($"[AIActionShoot3D] {_character.name} waiting for allocation grant...");
 				return;
 			}
 			
 			if (!_hasAllocation)
 			{
 				// No allocation, stop shooting
+				Debug.LogWarning($"[AIActionShoot3D] {_character.name} has no allocation, cannot shoot");
 				TargetHandleWeaponAbility.ShootStop();
 				_numberOfShoots = 0;
 				return;
@@ -643,6 +647,7 @@ namespace MoreMountains.TopDownEngine
 	/// </summary>
 	protected virtual void HandleAllocationGranted(CombatAllocationEvent evt)
 	{
+		Debug.LogWarning($"[AIActionShoot3D] {_character.name} GRANTED {evt.BulletsGranted} bullets for {evt.EnemyObject.name}");
 		_currentAllocatedTarget = evt.EnemyObject;
 		_bulletsAllocated = evt.BulletsGranted;
 		_hasAllocation = true;

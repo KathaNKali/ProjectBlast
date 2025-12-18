@@ -244,11 +244,29 @@ namespace ProjectBlast.AI
             // Remove any null targets
             targets.RemoveAll(t => t == null);
             
-            // BLACKLIST: Remove already-claimed enemies (PHASE 1 only)
-            // In PHASE 2 (no unclaimed enemies), all enemies are available
+            // COOPERATIVE ALLOCATION: Filter out dead/fully-allocated enemies
             if (CombatCoordinator.HasInstance)
             {
                 targets.RemoveAll(t => !CombatCoordinator.Instance.IsEnemyAvailableForClaim(t.gameObject));
+            }
+            
+            if (targets.Count == 0)
+            {
+                return null;
+            }
+            
+            // SMART DISTRIBUTION: Prefer unclaimed enemies over already-allocated ones
+            // This naturally spreads heroes across multiple enemies
+            if (CombatCoordinator.HasInstance && targets.Count > 1)
+            {
+                List<Transform> unclaimedTargets = targets.FindAll(t => 
+                    CombatCoordinator.Instance.GetEnemyAllocatedHeroCount(t.gameObject) == 0);
+                
+                // If unclaimed enemies exist, prioritize them
+                if (unclaimedTargets.Count > 0)
+                {
+                    targets = unclaimedTargets;
+                }
             }
             
             if (targets.Count == 0)
