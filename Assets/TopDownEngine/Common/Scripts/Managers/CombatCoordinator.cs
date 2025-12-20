@@ -593,11 +593,10 @@ namespace MoreMountains.TopDownEngine
             int bulletsNeeded = Mathf.CeilToInt(damageNeeded / damagePerBullet);
             int bulletsToAllocate = Mathf.Min(bulletsRequested, bulletsNeeded);
             
-            // If hero barely contributes, allocate at least 1 bullet
-            if (bulletsToAllocate == 0 && effectiveHP > 0)
-            {
-                bulletsToAllocate = 1;
-            }
+            // SOLUTION 2 FIX: Allow 0 bullet allocations
+            // If bulletsToAllocate is 0, the hero will be granted 0 bullets
+            // This triggers Solution 2 in AIActionShoot3D which immediately releases and finds new target
+            // No need to force minimum of 1 bullet - that creates stuck heroes
             
             // Create or update allocation for this hero
             bool wasUnclaimed = targetData.Allocations.Count == 0;
@@ -655,6 +654,12 @@ namespace MoreMountains.TopDownEngine
             }
             
             var targetData = _targets[health];
+            
+            // PHASE 2: Safety check - don't shoot dead enemies
+            if (targetData.Health == null || targetData.Health.CurrentHealth <= 0)
+            {
+                return false; // Enemy is dead
+            }
             
             if (!targetData.Allocations.ContainsKey(character))
             {
@@ -968,6 +973,8 @@ namespace MoreMountains.TopDownEngine
         
         /// <summary>
         /// Called when enemy dies. Notifies all allocated heroes to find new targets.
+        /// <summary>
+        /// Called when an enemy dies to clean up allocations and notify heroes.
         /// </summary>
         private void OnEnemyDied(Health enemyHealth, EnemyTargetData targetData)
         {
@@ -984,10 +991,12 @@ namespace MoreMountains.TopDownEngine
             
             if (EnableDebugLogs)
             {
-                Debug.Log($"[CombatCoordinator] {enemy.name} died. Notifying {heroesToNotify.Count} heroes");
+                Debug.Log($"[CombatCoordinator] {enemy.name} died. Notifying {heroesToNotify.Count} heroes to release allocations");
             }
             
-            // Notify all heroes that had allocations on this enemy
+            // PHASE 2: ENEMY DEATH CLEANUP
+            // Immediately notify all heroes that had allocations on this enemy
+            // This releases their allocations and clears targets so they can find new enemies
             foreach (var character in heroesToNotify)
             {
                 if (character != null)
@@ -995,7 +1004,15 @@ namespace MoreMountains.TopDownEngine
                     var aiAction = character.GetComponentInParent<AIActionShoot3D>();
                     if (aiAction != null)
                     {
+                        if (EnableDebugLogs)
+                        {
+                            Debug.Log($"[CombatCoordinator] Notifying {character.name} that {enemy.name} died - clearing target");
+                        }
                         aiAction.OnCurrentTargetDied();
+                    }
+                    else if (EnableDebugLogs)
+                    {
+                        Debug.LogWarning($"[CombatCoordinator] {character.name} has no AIActionShoot3D component!");
                     }
                 }
             }

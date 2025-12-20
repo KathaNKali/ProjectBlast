@@ -367,6 +367,17 @@ namespace MoreMountains.TopDownEngine
 		// Check if we have permission to fire next bullet (cooperative allocation)
 		if (EnableSmartFiring && _brain.Target != null)
 		{
+			// PHASE 2: Safety check - if target is dead, clear immediately
+			var targetHealth = _brain.Target.GetComponent<Health>();
+			if (targetHealth != null && targetHealth.CurrentHealth <= 0)
+			{
+				Debug.LogWarning($"[AIActionShoot3D] {_character.name} target {_brain.Target.name} is dead - clearing target");
+				TargetHandleWeaponAbility.ShootStop();
+				_numberOfShoots = 0;
+				ClearCurrentTarget();
+				return;
+			}
+			
 			// EVENT-DRIVEN: Wait for allocation grant before shooting
 			if (_pendingAllocationRequest)
 			{
@@ -740,6 +751,16 @@ namespace MoreMountains.TopDownEngine
 	protected virtual void HandleAllocationGranted(CombatAllocationEvent evt)
 	{
 		Debug.LogWarning($"[AIActionShoot3D] {_character.name} GRANTED {evt.BulletsGranted} bullets for {evt.EnemyObject.name}");
+		
+		// PHASE 2: Safety check - if enemy already dead, don't accept allocation
+		if (evt.EnemyHealth != null && evt.EnemyHealth.CurrentHealth <= 0)
+		{
+			Debug.LogWarning($"[AIActionShoot3D] {_character.name} granted allocation but enemy {evt.EnemyObject.name} is already dead - rejecting");
+			_hasAllocation = false;
+			_pendingAllocationRequest = false;
+			ClearCurrentTarget();
+			return;
+		}
 		
 		// SOLUTION 2: Zero Bullet Detection
 		// If granted 0 bullets, hero can't contribute meaningfully
