@@ -7,12 +7,17 @@ namespace ProjectBlast.Enemy
     /// <summary>
     /// Simple enemy spawner for testing hero shooting and detection systems.
     /// Spawns enemies with randomized health in a specified area.
+    /// 
+    /// AI INTEGRATION:
+    /// - Automatically sets enemy AIBrain.Target to PlayerBase
+    /// - Finds PlayerBase by tag or uses assigned TargetTransform
+    /// - Enemy prefab must have AIBrain component for movement AI
     /// </summary>
     [AddComponentMenu("ProjectBlast/Enemy/Simple Enemy Spawner")]
     public class SimpleEnemySpawner : MonoBehaviour
     {
         [Header("Spawn Configuration")]
-        [Tooltip("The enemy prefab to spawn (must have Health component)")]
+        [Tooltip("The enemy prefab to spawn (must have Health component and AIBrain)")]
         public GameObject EnemyPrefab;
         
         [Tooltip("Number of enemies to spawn")]
@@ -20,6 +25,13 @@ namespace ProjectBlast.Enemy
         
         [Tooltip("Spawn all enemies immediately on start")]
         public bool SpawnOnStart = true;
+        
+        [Header("AI Target Configuration")]
+        [Tooltip("Target for enemy AI (usually PlayerBase). If null, will find by tag.")]
+        public Transform TargetTransform;
+        
+        [Tooltip("Tag to search for if TargetTransform not assigned")]
+        public string TargetTag = "PlayerBase";
         
         [Header("Spawn Area")]
         [Tooltip("The center point of the spawn area (if null, uses this transform)")]
@@ -68,6 +80,24 @@ namespace ProjectBlast.Enemy
             // Set spawn center
             _spawnCenterPosition = SpawnCenter != null ? SpawnCenter.position : transform.position;
             
+            // Auto-find target if not assigned
+            if (TargetTransform == null && !string.IsNullOrEmpty(TargetTag))
+            {
+                GameObject targetObj = GameObject.FindGameObjectWithTag(TargetTag);
+                if (targetObj != null)
+                {
+                    TargetTransform = targetObj.transform;
+                    if (DebugMode)
+                    {
+                        Debug.Log($"[SimpleEnemySpawner] Auto-found target: {TargetTransform.name} at {TargetTransform.position}");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[SimpleEnemySpawner] Could not find GameObject with tag '{TargetTag}'. Enemies may not move!");
+                }
+            }
+            
             if (SpawnOnStart)
             {
                 if (InitialDelay > 0)
@@ -78,6 +108,23 @@ namespace ProjectBlast.Enemy
                 {
                     StartSpawning();
                 }
+            }
+        }
+
+        /// <summary>
+        /// Update loop for timed spawning
+        /// </summary>
+        protected virtual void Update()
+        {
+            if (!_isSpawning || _spawnedCount >= SpawnCount)
+            {
+                return;
+            }
+            
+            if (Time.time >= _nextSpawnTime)
+            {
+                SpawnEnemy();
+                _nextSpawnTime = Time.time + SpawnInterval;
             }
         }
 
@@ -98,23 +145,6 @@ namespace ProjectBlast.Enemy
             if (DebugMode)
             {
                 Debug.Log($"[SimpleEnemySpawner] Started spawning {SpawnCount} enemies");
-            }
-        }
-
-        /// <summary>
-        /// Update loop for timed spawning
-        /// </summary>
-        protected virtual void Update()
-        {
-            if (!_isSpawning || _spawnedCount >= SpawnCount)
-            {
-                return;
-            }
-            
-            if (Time.time >= _nextSpawnTime)
-            {
-                SpawnEnemy();
-                _nextSpawnTime = Time.time + SpawnInterval;
             }
         }
 
@@ -162,6 +192,29 @@ namespace ProjectBlast.Enemy
             else
             {
                 Debug.LogWarning($"[SimpleEnemySpawner] Enemy prefab {EnemyPrefab.name} has no Health component!");
+            }
+            
+            // Configure AI Brain target
+            AIBrain enemyBrain = enemy.GetComponentInChildren<AIBrain>();
+            if (enemyBrain != null && TargetTransform != null)
+            {
+                enemyBrain.Target = TargetTransform;
+                
+                if (DebugMode)
+                {
+                    Debug.Log($"[SimpleEnemySpawner] Set {enemy.name} AIBrain target to: {TargetTransform.name} at {TargetTransform.position}");
+                }
+            }
+            else if (enemyBrain == null)
+            {
+                if (DebugMode)
+                {
+                    Debug.LogWarning($"[SimpleEnemySpawner] Enemy {enemy.name} has no AIBrain component! It will not move.");
+                }
+            }
+            else if (TargetTransform == null)
+            {
+                Debug.LogWarning($"[SimpleEnemySpawner] No target set for enemy AI! Enemy {enemy.name} may not move.");
             }
             
             _spawnedCount++;

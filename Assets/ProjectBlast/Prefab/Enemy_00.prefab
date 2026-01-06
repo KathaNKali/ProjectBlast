@@ -13227,6 +13227,8 @@ GameObject:
   - component: {fileID: 141769260132801180}
   - component: {fileID: 141769260132801175}
   - component: {fileID: 141769260132801174}
+  - component: {fileID: 7897520127478766776}
+  - component: {fileID: 5410369640426563949}
   m_Layer: 13
   m_Name: Abilities
   m_TagString: Untagged
@@ -13350,7 +13352,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 141769260132801153}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6a07c6668aa55403790d27b575279549, type: 3}
   m_Name: 
@@ -13427,6 +13429,65 @@ MonoBehaviour:
   EdgePrecision: 3
   EdgeThreshold: 0.5
   VisionMeshFilter: {fileID: 141769261465805080}
+--- !u!114 &7897520127478766776
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 141769260132801153}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 69614a4a3cfd06d4e8388acafdb774bd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MoreMountains.TopDownEngine::MoreMountains.TopDownEngine.CharacterMovement
+  AbilityStartSfx: {fileID: 0}
+  AbilityInProgressSfx: {fileID: 0}
+  AbilityStopSfx: {fileID: 0}
+  AbilityStartFeedbacks: {fileID: 0}
+  AbilityStopFeedbacks: {fileID: 0}
+  AbilityPermitted: 1
+  BlockingMovementStates: 
+  BlockingConditionStates: 
+  BlockingWeaponStates: 
+  Movement: 0
+  InputAuthorized: 1
+  AnalogInput: 0
+  ScriptDrivenInput: 0
+  WalkSpeed: 6
+  ShouldSetMovement: 1
+  IdleThreshold: 0.05
+  Acceleration: 10
+  Deceleration: 10
+  InterpolateMovementSpeed: 0
+  WalkParticles: []
+  TouchTheGroundParticles: []
+  TouchTheGroundSfx: []
+--- !u!114 &5410369640426563949
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 141769260132801153}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5fe81ad80cb743b408fa90b048ad597f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MoreMountains.TopDownEngine::MoreMountains.TopDownEngine.Character
+  CharacterDimension: 0
+  CharacterType: 1
+  PlayerID: 
+  CharacterAnimator: {fileID: 0}
+  UseDefaultMecanim: 1
+  RunAnimatorSanityChecks: 0
+  DisableAnimatorLogs: 1
+  CharacterModel: {fileID: 0}
+  CharacterHealth: {fileID: 0}
+  SendStateChangeEvents: 1
+  AdditionalAbilityNodes: []
+  CharacterBrain: {fileID: 0}
+  OptimizeForMobile: 1
 --- !u!1 &141769260185606840
 GameObject:
   m_ObjectHideFlags: 0
@@ -45471,11 +45532,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b8e7d2f9c3a1e6f8d5a9b2c4e7f1a3d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: MoreMountains.TopDownEngine::EnemyCombatTracker
-  _totalReservedDamage: 0
+  _totalInFlightDamage: 0
   _activeHeroCount: 0
   _currentHP: 0
   _effectiveHP: 0
-  _reservingHeroes: []
+  _heroesTracking: []
 --- !u!1 &141769261665784432
 GameObject:
   m_ObjectHideFlags: 0
@@ -56262,13 +56323,14 @@ GameObject:
   - component: {fileID: 8562352844383890701}
   - component: {fileID: 8562352844383890690}
   - component: {fileID: 8562352844383890716}
+  - component: {fileID: 3853182230348167659}
   m_Layer: 13
   m_Name: AIBrain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &8564344828599714021
 Transform:
   m_ObjectHideFlags: 0
@@ -56291,51 +56353,19 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8562352844383890691}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: eec89e4158bf96841b9bc830fc5385ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   Owner: {fileID: 0}
   States:
-  - StateName: Seeking
+  - StateName: MoveToBase
     Actions:
       array:
-      - {fileID: 8592899605735082425}
-      - {fileID: 8593595384972061815}
+      - {fileID: 3853182230348167659}
     Transitions:
-      array:
-      - Decision: {fileID: 8562352844383890700}
-        TrueState: WaitToShoot
-        FalseState: 
-  - StateName: WaitToShoot
-    Actions:
-      array:
-      - {fileID: 8592899605735082425}
-    Transitions:
-      array:
-      - Decision: {fileID: 8562352844383890716}
-        TrueState: Destroying
-        FalseState: 
-  - StateName: Destroying
-    Actions:
-      array:
-      - {fileID: 8593149380626439685}
-    Transitions:
-      array:
-      - Decision: {fileID: 8562352844383890700}
-        TrueState: 
-        FalseState: SetLastKnownPosition
-  - StateName: BackToSeeking
-    Actions:
-      array:
-      - {fileID: 8592899605735082425}
-      - {fileID: 8593595384972061815}
-    Transitions:
-      array:
-      - Decision: {fileID: 8562352844383890700}
-        TrueState: WaitToShoot
-        FalseState: 
+      array: []
   TimeInThisState: 0
   Target: {fileID: 0}
   _lastKnownTargetPosition: {x: 0, y: 0, z: 0}
@@ -56409,7 +56439,13 @@ MonoBehaviour:
   LockVerticalAim: 0
   RequireAimLock: 1
   AimAngleTolerance: 5
+  AutoSwitchOnLOSBlocked: 1
+  ObstacleLayerMask:
+    serializedVersion: 2
+    m_Bits: 256
+  LineOfSightOffset: {x: 0, y: 0, z: 0}
   EnableSmartFiring: 1
+  MinimumBulletThreshold: 3
 --- !u!114 &8592899605735082425
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -56555,3 +56591,18 @@ MonoBehaviour:
   Label: ReactionTime
   AfterTimeMin: 0.6
   AfterTimeMax: 0.6
+--- !u!114 &3853182230348167659
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8562352844383890691}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97230edd623230e4ea486ef91a6d23e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MoreMountains.TopDownEngine::MoreMountains.TopDownEngine.AIActionMoveTowardsTarget3D
+  InitializationMode: 0
+  Label: 
+  MinimumDistance: 1

@@ -16,9 +16,9 @@ MonoBehaviour:
   WeaponType: 0
   Icon: {fileID: 0}
   Description: A reliable weapon.
-  DamagePerShot: 10
+  DamagePerShot: 50
   DamageType: 0
-  AmmoPerShot: 1
+  AmmoPerShot: 2
   ProjectilePrefab: {fileID: 0}
   ProjectileSpeed: 1
   ProjectileLifetime: 1.85
