@@ -135,7 +135,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &849267
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -529,62 +529,6 @@ Transform:
   - {fileID: 1700173030}
   - {fileID: 1295315591}
   - {fileID: 1845332067}
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1289801867
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1289801869}
-  - component: {fileID: 1289801868}
-  m_Layer: 0
-  m_Name: BattlefieldVisualiser
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1289801868
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1289801867}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 880f4c5a86021438cb837411e7bb6dfe, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectBlast.Combat.BattlefieldVisualizer
-  Config: {fileID: 11400000, guid: e1eb22325d542428dbcd3bbdd6ea472f, type: 2}
-  ShowGizmos: 1
-  ShowSpawnZones: 1
-  ShowWall: 1
-  ShowHeroSlots: 1
-  ShowMovementPaths: 1
-  ShowLabels: 1
-  SpawnZoneColor: {r: 1, g: 0.2, b: 0.2, a: 0.5}
-  WallColor: {r: 0.2, g: 0.5, b: 1, a: 0.8}
-  HeroSlotColor: {r: 0.2, g: 1, b: 0.2, a: 0.6}
-  PathColor: {r: 1, g: 1, b: 0, a: 0.7}
-  LabelColor: {r: 1, g: 1, b: 1, a: 1}
---- !u!4 &1289801869
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1289801867}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.14816, y: -1.01, z: 12.03055}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1295315588
@@ -1084,7 +1028,7 @@ MonoBehaviour:
   ActiveColumns: 1
   ActiveGridCenter: {x: 0, y: 0, z: 0}
   FiringRows: 1
-  FiringColumns: 3
+  FiringColumns: 2
   FiringGridCenter: {x: 0, y: 0, z: 3.23}
   CellSize: 2.41
   CellSpacing: 0.599
@@ -1119,4 +1063,3 @@ SceneRoots:
   - {fileID: 1958421372}
   - {fileID: 849268}
   - {fileID: 818403233}
-  - {fileID: 1289801869}

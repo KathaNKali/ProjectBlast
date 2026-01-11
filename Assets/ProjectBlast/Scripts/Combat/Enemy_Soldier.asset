@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66dcfd44e910b40a0bdeacc270a9d501, type: 3}
+  m_Name: Enemy_Soldier
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectBlast.Combat.EnemyDataSO
+  EnemyName: Grunt
+  Prefab: {fileID: 0}
+  Description: Basic enemy unit
+  MaxHealth: 100
+  MovementSpeed: 3
+  AttackRange: 8
+  DamagePerShot: 10
+  FireRate: 1
+  ProjectileSpeed: 15
+  _timeBetweenShots: 0
+  _dps: 0
+  ProjectilePrefab: {fileID: 0}
+  ProjectileColor: {r: 1, g: 0, b: 0, a: 1}
+  ScaleMultiplier: 1
+  BaseDamagePerShot: 10
+  BaseAttackDuration: 0
+  _calculatedThreat: 0
+  ThreatMultiplier: 1
