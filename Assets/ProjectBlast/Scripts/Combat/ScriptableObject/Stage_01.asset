@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f38134f20fcea41229dcc39905d5678c, type: 3}
+  m_Name: Stage_01
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectBlast.Combat.StageConfigSO
+  StageNumber: 1
+  StageName: Stage 1
+  Description: Your first battle!
+  Difficulty: 2
+  BattlefieldConfig: {fileID: 0}
+  EnemySpawnZ_Override: 0
+  BaseWallZ_Override: 0
+  LaneCount_Override: 0
+  Waves: []
+  _totalWaves: 0
+  _totalDuration: 0
+  EndlessMode: 0
+  BaseHealth: 500
+  StartingHeroCount: 5
+  UnlockStars: 1
+  WinCondition: 0
+  RequiredSurvivalTime: 180
+  RequiredKills: 50
+  AllowRetry: 1
+  CurrencyReward: 100
+  ExperienceReward: 50
+  HeroUnlocks: []
+  NextStage: {fileID: 0}
