@@ -16,14 +16,15 @@ MonoBehaviour:
   StageName: Stage 1
   Description: Your first battle!
   Difficulty: 2
-  BattlefieldConfig: {fileID: 0}
+  BattlefieldConfig: {fileID: 11400000, guid: e1eb22325d542428dbcd3bbdd6ea472f, type: 2}
   EnemySpawnZ_Override: 0
   BaseWallZ_Override: 0
   LaneCount_Override: 0
-  Waves: []
-  _totalWaves: 0
-  _totalDuration: 0
-  EndlessMode: 0
+  Waves:
+  - {fileID: 11400000, guid: 10c220376eabf4889930dd730e9c57c7, type: 2}
+  _totalWaves: 1
+  _totalDuration: 25
+  EndlessMode: 1
   BaseHealth: 500
   StartingHeroCount: 5
   UnlockStars: 1

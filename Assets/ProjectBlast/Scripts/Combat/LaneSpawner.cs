@@ -30,7 +30,7 @@ namespace ProjectBlast.Combat
         [Header("=== SPAWN SETTINGS ===")]
         [Tooltip("Minimum time between spawns in this lane (seconds)")]
         [Range(0.1f, 5f)]
-        public float SpawnCooldown = 0.5f;
+        public float SpawnCooldown = 0.3f;
         
         [Tooltip("Maximum active enemies in this lane (0 = unlimited)")]
         public int MaxActiveEnemies = 20;
@@ -149,10 +149,28 @@ namespace ProjectBlast.Combat
         {
             _currentBudget = budget;
             
-            // Try to spawn if conditions are met
-            if (CanSpawn && _currentWave != null)
+            // Try to spawn multiple times if we have budget (allows burst spawning)
+            int maxSpawnAttempts = 5; // Prevent infinite loops
+            int spawnAttempts = 0;
+            
+            while (CanSpawn && _currentWave != null && spawnAttempts < maxSpawnAttempts)
             {
+                // Check if we have enough budget before attempting spawn
+                EnemyDataSO cheapestEnemy = _currentWave.GetAffordableEnemy(_currentBudget);
+                if (cheapestEnemy == null)
+                {
+                    // Not enough budget, stop trying
+                    break;
+                }
+                
                 TrySpawnEnemy();
+                spawnAttempts++;
+                
+                // If spawn succeeded, cooldown will prevent further spawns this frame
+                if (!CanSpawn)
+                {
+                    break;
+                }
             }
         }
         
@@ -173,16 +191,17 @@ namespace ProjectBlast.Combat
             if (selectedEnemy == null)
             {
                 // Not enough budget for any enemy
+                if (DebugMode && Time.frameCount % 60 == 0)
+                {
+                    Debug.Log($"[LaneSpawner] Lane {LaneIndex} - Insufficient budget: {_currentBudget:F0}. Cheapest enemy costs more.");
+                }
                 return;
             }
             
             // Check if we have a prefab to spawn
             if (selectedEnemy.Prefab == null)
             {
-                if (DebugMode)
-                {
-                    Debug.LogWarning($"[LaneSpawner] Lane {LaneIndex} - {selectedEnemy.EnemyName} has no prefab assigned!");
-                }
+                Debug.LogWarning($"[LaneSpawner] Lane {LaneIndex} - {selectedEnemy.EnemyName} has no prefab assigned!");
                 return;
             }
             
@@ -206,6 +225,9 @@ namespace ProjectBlast.Combat
             
             // Apply enemy data to the spawned instance
             ApplyEnemyData(enemyInstance, enemyData);
+            
+            // Configure AI for movement
+            ConfigureEnemyAI(enemyInstance);
             
             // Track enemy
             _activeEnemies.Add(enemyInstance);
@@ -281,6 +303,24 @@ namespace ProjectBlast.Combat
                     weaponData.Damage = data.DamagePerShot;
                     weaponData.AttackRange = data.AttackRange;
                 }
+            }
+        }
+        
+        /// <summary>
+        /// Configure AI components for enemy movement
+        /// </summary>
+        private void ConfigureEnemyAI(GameObject enemy)
+        {
+            // Configure AIDecisionReachedWall with BattlefieldConfig
+            AIDecisionReachedWall[] wallDecisions = enemy.GetComponentsInChildren<AIDecisionReachedWall>();
+            foreach (var decision in wallDecisions)
+            {
+                decision.BattlefieldConfig = BattlefieldConfig;
+            }
+            
+            if (DebugMode && wallDecisions.Length > 0)
+            {
+                Debug.Log($"[LaneSpawner] Configured {wallDecisions.Length} AIDecisionReachedWall components on {enemy.name}");
             }
         }
         

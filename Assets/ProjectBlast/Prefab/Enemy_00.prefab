@@ -56324,6 +56324,8 @@ GameObject:
   - component: {fileID: 8562352844383890690}
   - component: {fileID: 8562352844383890716}
   - component: {fileID: 3853182230348167659}
+  - component: {fileID: 5285078047369171785}
+  - component: {fileID: 2764535903648612309}
   m_Layer: 13
   m_Name: AIBrain
   m_TagString: Untagged
@@ -56360,10 +56362,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Owner: {fileID: 0}
   States:
-  - StateName: MoveToBase
+  - StateName: Moving
     Actions:
       array:
-      - {fileID: 3853182230348167659}
+      - {fileID: 5285078047369171785}
+    Transitions:
+      array:
+      - Decision: {fileID: 2764535903648612309}
+        TrueState: 
+        FalseState: 
+  - StateName: Attack
+    Actions:
+      array:
+      - {fileID: 0}
     Transitions:
       array: []
   TimeInThisState: 0
@@ -56533,7 +56544,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Label: 
   ComparisonMode: 1
-  Distance: 3
+  Distance: 1
 --- !u!114 &8562352844383890700
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -56598,7 +56609,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8562352844383890691}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 97230edd623230e4ea486ef91a6d23e1, type: 3}
   m_Name: 
@@ -56606,3 +56617,38 @@ MonoBehaviour:
   InitializationMode: 0
   Label: 
   MinimumDistance: 1
+--- !u!114 &5285078047369171785
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8562352844383890691}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dedfabf6dc8d040a786029072cb9e647, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectBlast.Combat.AIActionMoveForwardInLane
+  InitializationMode: 0
+  Label: 
+  MovementDirection: {x: 0, y: 0, z: -1}
+  NormalizeDirection: 1
+  DebugMode: 0
+--- !u!114 &2764535903648612309
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8562352844383890691}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c979aae499ebe4f08b01e755ee39cf8a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectBlast.Combat.AIDecisionReachedWall
+  Label: 
+  BattlefieldConfig: {fileID: 0}
+  ManualWallZ: -5
+  BufferDistance: 0.1
+  Comparison: 1
+  DebugMode: 0

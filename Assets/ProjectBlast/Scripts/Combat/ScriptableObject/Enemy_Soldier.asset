@@ -13,20 +13,20 @@ MonoBehaviour:
   m_Name: Enemy_Soldier
   m_EditorClassIdentifier: Assembly-CSharp::ProjectBlast.Combat.EnemyDataSO
   EnemyName: Grunt
-  Prefab: {fileID: 0}
+  Prefab: {fileID: 141769261663588977, guid: 864ab1d1aa76246f699722a847a7a6e7, type: 3}
   Description: Basic enemy unit
-  MaxHealth: 100
+  MaxHealth: 200
   MovementSpeed: 3
   AttackRange: 8
   DamagePerShot: 10
   FireRate: 1
   ProjectileSpeed: 15
-  _timeBetweenShots: 0
-  _dps: 0
+  _timeBetweenShots: 1
+  _dps: 10
   ProjectilePrefab: {fileID: 0}
   ProjectileColor: {r: 1, g: 0, b: 0, a: 1}
   ScaleMultiplier: 1
   BaseDamagePerShot: 10
   BaseAttackDuration: 0
-  _calculatedThreat: 0
+  _calculatedThreat: 760
   ThreatMultiplier: 1

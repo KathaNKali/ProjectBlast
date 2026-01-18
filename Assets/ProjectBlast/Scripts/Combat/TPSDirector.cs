@@ -390,7 +390,7 @@ namespace ProjectBlast.Combat
         }
         
         /// <summary>
-        /// Update TPS and accumulate global threat budget
+        /// Update TPS and accumulate per-lane threat budgets
         /// </summary>
         private void UpdateTPS()
         {
@@ -400,25 +400,26 @@ namespace ProjectBlast.Combat
             _currentTPS = _currentWave.GetTPSAtTime(_waveNormalizedTime);
             _currentTPS *= GlobalTPSMultiplier;
             
-            // Accumulate threat budget
+            // Accumulate threat budget per lane based on multipliers
             float threatThisFrame = _currentTPS * Time.deltaTime;
+            
+            for (int i = 0; i < _laneBudgets.Length && i < _currentWave.LaneTPS_Multipliers.Length; i++)
+            {
+                float laneShare = threatThisFrame * _currentWave.LaneTPS_Multipliers[i];
+                _laneBudgets[i] += laneShare;
+            }
+            
+            // Also update global budget for statistics/display
             _globalThreatBudget += threatThisFrame;
         }
         
         /// <summary>
-        /// Distribute global budget to lanes
+        /// Distribute per-lane budgets to spawners
         /// </summary>
         private void DistributeBudget()
         {
-            // Distribute budget based on wave's lane multipliers
-            for (int i = 0; i < _laneBudgets.Length && i < _currentWave.LaneTPS_Multipliers.Length; i++)
-            {
-                float laneShare = _globalThreatBudget * _currentWave.LaneTPS_Multipliers[i];
-                _laneBudgets[i] = laneShare;
-            }
-            
-            // Send budgets to spawners
-            for (int i = 0; i < _laneSpawners.Count; i++)
+            // Each lane gets its own dedicated budget based on lane multipliers
+            for (int i = 0; i < _laneSpawners.Count && i < _laneBudgets.Length; i++)
             {
                 _laneSpawners[i].ReceiveThreatBudget(_laneBudgets[i]);
             }
@@ -436,7 +437,14 @@ namespace ProjectBlast.Combat
             _totalEnemiesSpawned++;
             _totalThreatSpent += enemyData.ThreatValue;
             
-            // Deduct from global budget
+            // Deduct from specific lane's budget
+            if (laneIndex >= 0 && laneIndex < _laneBudgets.Length)
+            {
+                _laneBudgets[laneIndex] -= enemyData.ThreatValue;
+                _laneBudgets[laneIndex] = Mathf.Max(0, _laneBudgets[laneIndex]);
+            }
+            
+            // Also deduct from global for statistics
             _globalThreatBudget -= enemyData.ThreatValue;
             _globalThreatBudget = Mathf.Max(0, _globalThreatBudget);
             
@@ -445,7 +453,7 @@ namespace ProjectBlast.Combat
             if (DebugMode)
             {
                 Debug.Log($"[TPSDirector] Enemy spawned: {enemyData.EnemyName} in Lane {laneIndex} " +
-                         $"(Threat: {enemyData.ThreatValue:F0}, Remaining budget: {_globalThreatBudget:F0})");
+                         $"(Threat: {enemyData.ThreatValue:F0}, Lane budget: {_laneBudgets[laneIndex]:F0})");
             }
         }
         
@@ -524,11 +532,12 @@ namespace ProjectBlast.Combat
                               $"Enemies Killed: {_totalEnemiesKilled}\n" +
                               $"Threat Spent: {_totalThreatSpent:F0}\n\n";
             
-            // Lane budgets
+            // Lane budgets with multipliers
             debugText += "Lane Budgets:\n";
             for (int i = 0; i < _laneBudgets.Length; i++)
             {
-                debugText += $"  Lane {i}: {_laneBudgets[i]:F0}\n";
+                float multiplier = i < _currentWave.LaneTPS_Multipliers.Length ? _currentWave.LaneTPS_Multipliers[i] : 0f;
+                debugText += $"  Lane {i}: {_laneBudgets[i]:F0} ({multiplier:P0})\n";
             }
             
             GUI.Box(new Rect(10, 10, 300, 300), debugText, style);

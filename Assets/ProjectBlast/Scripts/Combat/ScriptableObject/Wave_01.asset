@@ -15,8 +15,8 @@ MonoBehaviour:
   WaveNumber: 1
   WaveName: Wave 1
   Description: Standard wave
-  StartingTPS: 30
-  PeakTPS: 60
+  StartingTPS: 50
+  PeakTPS: 100
   TPSCurve:
     serializedVersion: 2
     m_Curve:
@@ -45,13 +45,17 @@ MonoBehaviour:
   WaveDuration: 45
   BreakAfterWave: 10
   LaneTPS_Multipliers:
-  - 0.33
-  - 0.34
-  - 0.33
+  - 0.33333334
+  - 0.33333334
+  - 0.33333334
   AutoEvenDistribution: 1
-  AllowedEnemies: []
-  EnemyWeights: []
+  AllowedEnemies:
+  - {fileID: 11400000, guid: 4b9867fb0c2f545b4b574dd07ec806f5, type: 2}
+  - {fileID: 11400000, guid: 56d6afb25bb2947ce90f48090d39886c, type: 2}
+  EnemyWeights:
+  - 1
+  - 1
   HasEnemyLimit: 0
   MaxEnemiesSpawned: 20
-  MustClearWave: 0
-  ProgressionType: 0
+  MustClearWave: 1
+  ProgressionType: 1
