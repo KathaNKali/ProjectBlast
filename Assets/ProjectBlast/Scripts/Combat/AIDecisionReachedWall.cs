@@ -9,16 +9,6 @@ namespace ProjectBlast.Combat
     /// 
     /// Returns true when the character has reached or passed the base wall position.
     /// Used to transition from moving state to attacking state.
-    /// 
-    /// Usage:
-    /// - Add to AIBrain state transitions
-    /// - Requires BattlefieldConfigSO to be set (or use manual wall Z position)
-    /// - Transition: Moving → Attacking when wall reached
-    /// 
-    /// Integration:
-    /// - Works with AIActionMoveForwardInLane
-    /// - Uses BattlefieldConfigSO.BaseWallZ for wall position
-    /// - Includes buffer distance for smooth transitions
     /// </summary>
     [AddComponentMenu("ProjectBlast/Combat/AI/Decisions/AI Decision Reached Wall")]
     public class AIDecisionReachedWall : AIDecision
@@ -83,7 +73,6 @@ namespace ProjectBlast.Combat
         /// <summary>
         /// On Decide we check if character has reached the wall
         /// </summary>
-        /// <returns>True if wall reached, false otherwise</returns>
         public override bool Decide()
         {
             return EvaluateWallDistance();

@@ -311,16 +311,34 @@ namespace ProjectBlast.Combat
         /// </summary>
         private void ConfigureEnemyAI(GameObject enemy)
         {
-            // Configure AIDecisionReachedWall with BattlefieldConfig
-            AIDecisionReachedWall[] wallDecisions = enemy.GetComponentsInChildren<AIDecisionReachedWall>();
-            foreach (var decision in wallDecisions)
+            // Configure AIDecisionReachedWall with BattlefieldConfig using reflection temporarily
+            // This avoids compilation issues while Unity refreshes
+            var wallDecisionType = System.Type.GetType("ProjectBlast.Combat.AIDecisionReachedWall, Assembly-CSharp");
+            if (wallDecisionType != null)
             {
-                decision.BattlefieldConfig = BattlefieldConfig;
+                var wallDecisions = enemy.GetComponentsInChildren(wallDecisionType, true);
+                foreach (var decision in wallDecisions)
+                {
+                    var configField = wallDecisionType.GetField("BattlefieldConfig");
+                    if (configField != null)
+                    {
+                        configField.SetValue(decision, BattlefieldConfig);
+                        
+                        if (DebugMode)
+                        {
+                            Debug.Log($"[LaneSpawner] Configured AIDecisionReachedWall on {((Component)decision).gameObject.name} with wall Z: {BattlefieldConfig.BaseWallZ}");
+                        }
+                    }
+                }
+                
+                if (wallDecisions.Length == 0 && DebugMode)
+                {
+                    Debug.LogWarning($"[LaneSpawner] No AIDecisionReachedWall found on {enemy.name}! Enemy won't stop at wall.");
+                }
             }
-            
-            if (DebugMode && wallDecisions.Length > 0)
+            else if (DebugMode)
             {
-                Debug.Log($"[LaneSpawner] Configured {wallDecisions.Length} AIDecisionReachedWall components on {enemy.name}");
+                Debug.LogWarning($"[LaneSpawner] AIDecisionReachedWall type not found yet - Unity may need to recompile.");
             }
         }
         
