@@ -227,7 +227,7 @@ namespace ProjectBlast.Combat
             ApplyEnemyData(enemyInstance, enemyData);
             
             // Configure AI for movement
-            ConfigureEnemyAI(enemyInstance);
+            ConfigureEnemyAI(enemyInstance, enemyData);
             
             // Track enemy
             _activeEnemies.Add(enemyInstance);
@@ -272,14 +272,34 @@ namespace ProjectBlast.Combat
                 health.InitialHealth = data.MaxHealth;
             }
             
-            // Apply movement speed
+            // Apply movement speed (FIXED: Use WalkSpeed instead of MovementSpeed property)
             Character character = enemy.MMGetComponentNoAlloc<Character>();
             if (character != null)
             {
                 CharacterMovement movement = character.FindAbility<CharacterMovement>();
                 if (movement != null)
                 {
-                    movement.MovementSpeed = data.MovementSpeed;
+                    movement.WalkSpeed = data.MovementSpeed;
+                    
+                    if (DebugMode)
+                    {
+                        Debug.Log($"[LaneSpawner] Applied movement speed {data.MovementSpeed} to {enemy.name}");
+                    }
+                }
+                else if (DebugMode)
+                {
+                    Debug.LogWarning($"[LaneSpawner] No CharacterMovement ability found on {enemy.name}!");
+                }
+            }
+            
+            // Apply scale multiplier
+            if (data.ScaleMultiplier != 1f)
+            {
+                enemy.transform.localScale = Vector3.one * data.ScaleMultiplier;
+                
+                if (DebugMode)
+                {
+                    Debug.Log($"[LaneSpawner] Applied scale {data.ScaleMultiplier} to {enemy.name}");
                 }
             }
             
@@ -302,17 +322,47 @@ namespace ProjectBlast.Combat
                     }
                     weaponData.Damage = data.DamagePerShot;
                     weaponData.AttackRange = data.AttackRange;
+                    weaponData.ProjectileSpeed = data.ProjectileSpeed;
+                    
+                    // Apply homing settings if enabled
+                    if (data.UseHomingProjectiles && projectileWeapon.ObjectPooler != null)
+                    {
+                        // Get projectile prefab from object pooler
+                        MMSimpleObjectPooler simplePooler = projectileWeapon.ObjectPooler as MMSimpleObjectPooler;
+                        if (simplePooler != null && simplePooler.GameObjectToPool != null)
+                        {
+                            HomingProjectile homingProjectile = simplePooler.GameObjectToPool.GetComponent<HomingProjectile>();
+                            if (homingProjectile != null)
+                            {
+                                homingProjectile.TurnSpeed = data.HomingTurnSpeed;
+                                homingProjectile.HomingDuration = data.HomingDuration;
+                                
+                                if (DebugMode)
+                                {
+                                    Debug.Log($"[LaneSpawner] Applied homing settings to {enemy.name}: TurnSpeed={data.HomingTurnSpeed}, Duration={data.HomingDuration}");
+                                }
+                            }
+                            else if (DebugMode)
+                            {
+                                Debug.LogWarning($"[LaneSpawner] Enemy {enemy.name} has UseHomingProjectiles=true but projectile prefab doesn't have HomingProjectile component!");
+                            }
+                        }
+                    }
+                    
+                    if (DebugMode)
+                    {
+                        Debug.Log($"[LaneSpawner] Applied weapon stats to {enemy.name}: Damage={data.DamagePerShot}, FireRate={data.FireRate}, Range={data.AttackRange}");
+                    }
                 }
             }
         }
         
         /// <summary>
-        /// Configure AI components for enemy movement
+        /// Configure AI components for enemy movement and shooting
         /// </summary>
-        private void ConfigureEnemyAI(GameObject enemy)
+        private void ConfigureEnemyAI(GameObject enemy, EnemyDataSO data)
         {
-            // Configure AIDecisionReachedWall with BattlefieldConfig using reflection temporarily
-            // This avoids compilation issues while Unity refreshes
+            // Configure AIDecisionReachedWall with BattlefieldConfig
             var wallDecisionType = System.Type.GetType("ProjectBlast.Combat.AIDecisionReachedWall, Assembly-CSharp");
             if (wallDecisionType != null)
             {
@@ -339,6 +389,48 @@ namespace ProjectBlast.Combat
             else if (DebugMode)
             {
                 Debug.LogWarning($"[LaneSpawner] AIDecisionReachedWall type not found yet - Unity may need to recompile.");
+            }
+            
+            // Configure AIDecisionDetectHeroOrWall with detection range from EnemyDataSO
+            var detectDecisionType = System.Type.GetType("ProjectBlast.Combat.AIDecisionDetectHeroOrWall, Assembly-CSharp");
+            if (detectDecisionType != null)
+            {
+                var detectDecisions = enemy.GetComponentsInChildren(detectDecisionType, true);
+                foreach (var decision in detectDecisions)
+                {
+                    // Set detection range from EnemyDataSO
+                    var rangeField = detectDecisionType.GetField("HeroDetectionRange");
+                    if (rangeField != null)
+                    {
+                        rangeField.SetValue(decision, data.AttackRange);
+                    }
+                    
+                    // Set manual wall position from BattlefieldConfig
+                    var wallPosField = detectDecisionType.GetField("ManualWallPosition");
+                    if (wallPosField != null)
+                    {
+                        Vector3 wallPos = new Vector3(
+                            BattlefieldConfig.CenterLaneX,
+                            BattlefieldConfig.BaseWallHeight / 2f,
+                            BattlefieldConfig.BaseWallZ
+                        );
+                        wallPosField.SetValue(decision, wallPos);
+                    }
+                    
+                    if (DebugMode)
+                    {
+                        Debug.Log($"[LaneSpawner] Configured AIDecisionDetectHeroOrWall on {((Component)decision).gameObject.name} - Range: {data.AttackRange}m, Wall Z: {BattlefieldConfig.BaseWallZ}");
+                    }
+                }
+                
+                if (detectDecisions.Length == 0 && DebugMode)
+                {
+                    Debug.LogWarning($"[LaneSpawner] No AIDecisionDetectHeroOrWall found on {enemy.name}! Enemy won't detect targets.");
+                }
+            }
+            else if (DebugMode)
+            {
+                Debug.Log($"[LaneSpawner] AIDecisionDetectHeroOrWall type not found (OK if not yet added to prefab)");
             }
         }
         
@@ -456,20 +548,25 @@ namespace ProjectBlast.Combat
     {
         public int Damage = 10;
         public float AttackRange = 8f;
+        public float ProjectileSpeed = 15f;
         
         /// <summary>
-        /// Apply damage to projectiles spawned by this weapon
+        /// Apply damage and speed to projectiles spawned by this weapon
         /// </summary>
         public void ApplyToProjectile(Projectile projectile)
         {
             if (projectile != null)
             {
+                // Apply damage
                 DamageOnTouch damageComponent = projectile.GetComponent<DamageOnTouch>();
                 if (damageComponent != null)
                 {
                     damageComponent.MinDamageCaused = Damage;
                     damageComponent.MaxDamageCaused = Damage;
                 }
+                
+                // Apply projectile speed
+                projectile.Speed = ProjectileSpeed;
             }
         }
     }

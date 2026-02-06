@@ -16,7 +16,7 @@ MonoBehaviour:
   Prefab: {fileID: 141769261663588977, guid: 864ab1d1aa76246f699722a847a7a6e7, type: 3}
   Description: Basic enemy unit
   MaxHealth: 50
-  MovementSpeed: 2
+  MovementSpeed: 6
   AttackRange: 8
   DamagePerShot: 15
   FireRate: 1
@@ -28,5 +28,5 @@ MonoBehaviour:
   ScaleMultiplier: 1
   BaseDamagePerShot: 10
   BaseAttackDuration: 0.5
-  _calculatedThreat: 198.3
+  _calculatedThreat: 265
   ThreatMultiplier: 1

@@ -17,17 +17,17 @@ MonoBehaviour:
   SpawnAreaWidth: 1
   SpawnAreaHeight: 1
   BaseWallZ: 5
-  BaseWallWidth: 10
+  BaseWallWidth: 14.51
   BaseWallHeight: 2
-  BaseWallThickness: 0.5
+  BaseWallThickness: 0.2
   HeroZoneCenter: 0
   HeroRows: 4
-  HeroRowSpacing: 2.41
+  HeroRowSpacing: 2.56
   LaneCount: 3
   LaneWidth: 3
   CenterLaneX: 0
-  _heroFrontRowZ: 3.6150002
-  _heroBackRowZ: -3.6150002
-  _distanceWallToHeroes: -1.3849998
+  _heroFrontRowZ: 3.84
+  _heroBackRowZ: -3.84
+  _distanceWallToHeroes: -1.1600001
   _distanceSpawnToWall: 20
-  _calculatedBattlefieldLength: 28.615
+  _calculatedBattlefieldLength: 28.84
