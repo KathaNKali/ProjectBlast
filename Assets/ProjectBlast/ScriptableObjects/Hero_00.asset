@@ -33,8 +33,5 @@ MonoBehaviour:
   TargetTags:
   - Enemy
   DefaultWeaponPrefab: {fileID: 0}
-  UseHomingProjectiles: 0
-  HomingTurnSpeed: 5
-  HomingDuration: 3
   _cachedDPS: 0
   _cachedAmmoLifetime: 0

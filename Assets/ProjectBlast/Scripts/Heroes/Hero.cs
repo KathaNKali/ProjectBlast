@@ -2,7 +2,6 @@ using UnityEngine;
 using ProjectBlast.Grid;
 using ProjectBlast.Data;
 using ProjectBlast.AI;
-using ProjectBlast.Combat;
 using MoreMountains.TopDownEngine;
 using MoreMountains.Tools;
 
@@ -443,42 +442,6 @@ namespace ProjectBlast.Heroes
             else
             {
                 Debug.Log($"[Hero] {HeroName} equipped weapon '{_currentWeapon.WeaponName}' successfully. AI will control shooting.");
-                
-                // Apply homing settings if enabled in HeroDataSO
-                ApplyHomingSettings();
-            }
-        }
-        
-        /// <summary>
-        /// Apply homing projectile settings from HeroDataSO to the equipped weapon
-        /// </summary>
-        protected virtual void ApplyHomingSettings()
-        {
-            if (HeroData == null || _currentWeapon == null) return;
-            
-            if (HeroData.UseHomingProjectiles)
-            {
-                ProjectileWeapon projectileWeapon = _currentWeapon as ProjectileWeapon;
-                if (projectileWeapon != null && projectileWeapon.ObjectPooler != null)
-                {
-                    // Get projectile prefab from object pooler
-                    MMSimpleObjectPooler simplePooler = projectileWeapon.ObjectPooler as MMSimpleObjectPooler;
-                    if (simplePooler != null && simplePooler.GameObjectToPool != null)
-                    {
-                        HomingProjectile homingProjectile = simplePooler.GameObjectToPool.GetComponent<HomingProjectile>();
-                        if (homingProjectile != null)
-                        {
-                            homingProjectile.TurnSpeed = HeroData.HomingTurnSpeed;
-                            homingProjectile.HomingDuration = HeroData.HomingDuration;
-                            
-                            Debug.Log($"[Hero] {HeroName} applied homing settings: TurnSpeed={HeroData.HomingTurnSpeed}, Duration={HeroData.HomingDuration}");
-                        }
-                        else
-                        {
-                            Debug.LogWarning($"[Hero] {HeroName} has UseHomingProjectiles=true but projectile prefab doesn't have HomingProjectile component!");
-                        }
-                    }
-                }
             }
         }
         

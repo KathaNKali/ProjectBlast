@@ -4926,6 +4926,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4585949775055698}
   - component: {fileID: 114564512680273234}
+  - component: {fileID: 114520861229986060}
   - component: {fileID: 114102311241470466}
   - component: {fileID: 114692968763625280}
   - component: {fileID: 65720217773407688}
@@ -4933,7 +4934,6 @@ GameObject:
   - component: {fileID: 114675558199215844}
   - component: {fileID: 114469000093533656}
   - component: {fileID: 2895321207311194705}
-  - component: {fileID: 982011603955059950}
   m_Layer: 18
   m_Name: TankCannonBulletAI_Blast
   m_TagString: Untagged
@@ -4979,6 +4979,37 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   LifeTime: 5
+--- !u!114 &114520861229986060
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1854097648223014}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e1a732e2aa364c569bbb79498af8c5d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  BoundsBasedOn: 0
+  ExecuteOnEnable:
+    m_PersistentCalls:
+      m_Calls: []
+  ExecuteOnDisable:
+    m_PersistentCalls:
+      m_Calls: []
+  LifeTime: 2
+  FaceDirection: 1
+  FaceMovement: 0
+  MovementVector: 0
+  Speed: 100
+  Acceleration: 200
+  Direction: {x: -1, y: 0, z: 0}
+  DirectionCanBeChangedBySpawner: 1
+  FlipValue: {x: -1, y: 1, z: 1}
+  ProjectileIsFacingRight: 1
+  InitialInvulnerabilityDuration: 0
+  DamageOwner: 0
 --- !u!114 &114102311241470466
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5175,44 +5206,6 @@ MonoBehaviour:
   ProjectileComponent: {fileID: 0}
   _currentDamage: 0
   _damageConfigured: 0
---- !u!114 &982011603955059950
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1854097648223014}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d58f97f6b2a7147f0906d6d219ce4ce5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectBlast.Combat.HomingProjectile
-  BoundsBasedOn: 0
-  ExecuteOnEnable:
-    m_PersistentCalls:
-      m_Calls: []
-  ExecuteOnDisable:
-    m_PersistentCalls:
-      m_Calls: []
-  LifeTime: 0
-  FaceDirection: 1
-  FaceMovement: 0
-  MovementVector: 0
-  Speed: 0
-  Acceleration: 0
-  Direction: {x: -1, y: 0, z: 0}
-  DirectionCanBeChangedBySpawner: 1
-  FlipValue: {x: -1, y: 1, z: 1}
-  ProjectileIsFacingRight: 1
-  InitialInvulnerabilityDuration: 0
-  DamageOwner: 0
-  Target: {fileID: 0}
-  TurnSpeed: 5
-  HomingDuration: 3
-  MinTrackingDistance: 0.5
-  ShowDebugGizmos: 0
-  UseTurnRateLimit: 0
-  MaxTurnRate: 180
 --- !u!1 &1773329403652084787
 GameObject:
   m_ObjectHideFlags: 0

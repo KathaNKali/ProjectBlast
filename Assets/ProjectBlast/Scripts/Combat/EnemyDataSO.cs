@@ -1,5 +1,4 @@
 using UnityEngine;
-using MoreMountains.Tools;
 
 namespace ProjectBlast.Combat
 {
@@ -63,20 +62,6 @@ namespace ProjectBlast.Combat
         [Tooltip("Projectile speed (units per second)")]
         [Range(5f, 30f)]
         public float ProjectileSpeed = 15f;
-        
-        [Header("Homing Behavior")]
-        [Tooltip("If true, projectiles will curve toward targets (requires HomingProjectile component)")]
-        public bool UseHomingProjectiles = false;
-        
-        [Tooltip("How quickly projectiles turn toward target (1-20). Higher = sharper curves.")]
-        [Range(1f, 20f)]
-        [MMCondition("UseHomingProjectiles", true)]
-        public float HomingTurnSpeed = 5f;
-        
-        [Tooltip("Duration projectiles will track target (seconds)")]
-        [Range(0.5f, 10f)]
-        [MMCondition("UseHomingProjectiles", true)]
-        public float HomingDuration = 3f;
         
         [Tooltip("Time between shots (auto-calculated)")]
         [SerializeField] private float _timeBetweenShots;

@@ -45,10 +45,10 @@ MonoBehaviour:
   WaveDuration: 45
   BreakAfterWave: 10
   LaneTPS_Multipliers:
-  - 0.2
-  - 0.3
-  - 0.5
-  AutoEvenDistribution: 0
+  - 0.33333334
+  - 0.33333334
+  - 0.33333334
+  AutoEvenDistribution: 1
   AllowedEnemies:
   - {fileID: 11400000, guid: 4b9867fb0c2f545b4b574dd07ec806f5, type: 2}
   - {fileID: 11400000, guid: 56d6afb25bb2947ce90f48090d39886c, type: 2}
